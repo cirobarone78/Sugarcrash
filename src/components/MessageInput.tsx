@@ -3,6 +3,7 @@ import { EmojiPicker } from './EmojiPicker'
 import { MAX_MESSAGE_LENGTH } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
 import { compressImageToDataUrl } from '../lib/upload'
+import { Icon } from './Icon'
 
 interface MessageInputProps {
   onSend: (body: string) => Promise<{ error: string | null }>
@@ -64,11 +65,11 @@ export function MessageInput({ onSend, onSendImage, placeholder, disabled }: Mes
         <button
           type="button"
           onClick={() => setEmojiOpen((v) => !v)}
-          className="btn-ghost h-10 px-3 text-lg"
+          className="icon-btn"
           aria-label="Emoji"
           disabled={busy}
         >
-          😊
+          <Icon name="smile" size={18} />
         </button>
         {onSendImage && (
           <>
@@ -82,12 +83,12 @@ export function MessageInput({ onSend, onSendImage, placeholder, disabled }: Mes
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="btn-ghost h-10 px-3 text-lg"
+              className="icon-btn"
               aria-label={t('chat.attachImage')}
               title={t('chat.attachImage')}
               disabled={busy}
             >
-              🖼️
+              <Icon name="image" size={18} />
             </button>
           </>
         )}
@@ -110,9 +111,10 @@ export function MessageInput({ onSend, onSendImage, placeholder, disabled }: Mes
           type="button"
           onClick={submit}
           disabled={busy || !value.trim()}
-          className="btn-primary h-10"
+          className="btn-primary h-10 px-3.5"
+          aria-label={t('common.send')}
         >
-          {t('common.send')}
+          <Icon name="send" size={18} />
         </button>
       </div>
     </div>

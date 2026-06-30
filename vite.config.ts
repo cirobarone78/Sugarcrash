@@ -14,8 +14,8 @@ export default defineConfig({
         short_name: 'RetroCam',
         description:
           'Chatroom tematiche realtime con chat privata e webcam opzionale. Versione moderna e sicura delle vecchie webchat.',
-        theme_color: '#7c3aed',
-        background_color: '#0f0f17',
+        theme_color: '#0a0a12',
+        background_color: '#0a0a12',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
@@ -52,6 +52,15 @@ export default defineConfig({
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'assets-cache',
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
             },
           },
         ],

@@ -341,7 +341,7 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
           read_at: null,
         })
         await updateDoc(doc(db, 'privateThreads', activeThreadId), {
-          last_body: '📷',
+          last_body: t('chat.photo'),
           last_at: serverTimestamp(),
           last_sender: myId,
           [`reads.${myId}`]: Date.now(),

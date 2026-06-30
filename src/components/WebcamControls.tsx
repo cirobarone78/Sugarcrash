@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { formatDuration } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
+import { Icon } from './Icon'
 
 interface WebcamControlsProps {
   audioEnabled: boolean
@@ -32,28 +33,29 @@ export function WebcamControls({
   const { t } = useI18n()
   const elapsed = useElapsed()
   return (
-    <div className="flex items-center justify-between gap-2 rounded-lg bg-ink-850 p-2">
-      <span className="chip bg-ink-800 font-mono text-ink-200" title={t('cam.duration')}>
-        ⏱ {formatDuration(elapsed)}
+    <div className="flex items-center justify-between gap-2 rounded-xl bg-ink-850/80 p-2">
+      <span className="chip bg-ink-800 font-mono tabular-nums text-ink-200" title={t('cam.duration')}>
+        {formatDuration(elapsed)}
       </span>
       <div className="flex items-center gap-1.5">
         {hasAudio && (
           <button
             onClick={onToggleMic}
-            className={`btn ${audioEnabled ? 'bg-ink-700 text-white' : 'bg-ink-800 text-ink-400'}`}
+            className={`icon-btn ${audioEnabled ? 'text-white' : 'text-ink-400'}`}
             title={audioEnabled ? t('cam.micOn') : t('cam.micOff')}
           >
-            {audioEnabled ? '🎙️' : '🔇'}
+            <Icon name={audioEnabled ? 'mic' : 'micOff'} size={18} />
           </button>
         )}
         <button
           onClick={onToggleVideo}
-          className={`btn ${videoEnabled ? 'bg-ink-700 text-white' : 'bg-ink-800 text-ink-400'}`}
+          className={`icon-btn ${videoEnabled ? 'text-white' : 'text-ink-400'}`}
           title={videoEnabled ? t('cam.videoToggleOff') : t('cam.videoToggleOn')}
         >
-          {videoEnabled ? '📹' : '🚫'}
+          <Icon name={videoEnabled ? 'video' : 'videoOff'} size={18} />
         </button>
         <button onClick={onClose} className="btn-danger" title={t('cam.closeCam')}>
+          <Icon name="stop" size={16} />
           {t('cam.closeCam')}
         </button>
       </div>

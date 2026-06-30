@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { Icon } from './Icon'
 
 interface ModalProps {
   open: boolean
@@ -46,10 +47,10 @@ export function Modal({
             {dismissable && (
               <button
                 onClick={onClose}
-                className="rounded-md p-1 text-ink-400 hover:bg-ink-800 hover:text-white"
-                aria-label="Chiudi"
+                className="rounded-md p-1.5 text-ink-400 hover:bg-ink-800 hover:text-white"
+                aria-label="Close"
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             )}
           </div>

@@ -1,6 +1,7 @@
 import { usePresence } from '../context/PresenceContext'
 import { useI18n } from '../lib/i18n'
 import { RoomCard } from './RoomCard'
+import { Icon } from './Icon'
 import type { Room } from '../lib/types'
 
 interface LobbyPageProps {
@@ -38,8 +39,12 @@ export function LobbyPage({ rooms, privateRooms, onEnter, onCreatePrivate, isUnl
 
       {/* Stanze private */}
       <div className="mb-3 mt-8 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-white">🔒 {t('rooms.private')}</h2>
+        <h2 className="flex items-center gap-2 text-lg font-bold text-white">
+          <Icon name="lock" size={18} className="text-brand-300" />
+          {t('rooms.private')}
+        </h2>
         <button onClick={onCreatePrivate} className="btn-primary text-sm">
+          <Icon name="plus" size={16} />
           {t('rooms.create')}
         </button>
       </div>
@@ -56,15 +61,18 @@ export function LobbyPage({ rooms, privateRooms, onEnter, onCreatePrivate, isUnl
             >
               <div className="flex items-center justify-between">
                 <h3 className="flex items-center gap-1.5 text-base font-bold text-white">
-                  {isUnlocked(room) ? '🔓' : '🔒'} {room.name}
+                  <Icon name={isUnlocked(room) ? 'unlock' : 'lock'} size={16} className="text-brand-300" />
+                  {room.name}
                 </h3>
                 <span className="chip bg-ink-800 text-ink-200">
                   <span className="h-2 w-2 rounded-full bg-accent-green" />
                   {roomCounts[room.slug] ?? 0} {t('rooms.online')}
                 </span>
               </div>
-              <p className="text-xs text-ink-400">
-                {t('rooms.imagesAllowed')} · 👤 {room.owner_username}
+              <p className="flex items-center gap-1.5 text-xs text-ink-400">
+                <Icon name="image" size={13} /> {t('rooms.imagesAllowed')}
+                <span className="text-ink-600">·</span>
+                <Icon name="user" size={13} /> {room.owner_username}
               </p>
               <span className="mt-1 text-sm font-semibold text-brand-300 group-hover:text-brand-200">
                 {t('rooms.enter')} →

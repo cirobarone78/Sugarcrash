@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useUI } from '../context/UIContext'
 import { MessageInput } from './MessageInput'
 import { Avatar } from './Avatar'
+import { Icon } from './Icon'
 import { formatTime } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
 
@@ -42,10 +43,10 @@ export function PrivateChatWindow({ onBack, headerActions, webcamArea }: Private
       <div className="flex items-center gap-2 border-b border-ink-700 bg-ink-900 px-2 py-2">
         <button
           onClick={onBack}
-          className="rounded-md px-2 py-1 text-ink-400 hover:bg-ink-800 hover:text-white"
+          className="rounded-md p-1.5 text-ink-400 hover:bg-ink-800 hover:text-white"
           aria-label={t('common.back')}
         >
-          ←
+          <Icon name="back" size={18} />
         </button>
         <button
           onClick={() => openUserProfile(other.id)}
@@ -58,17 +59,17 @@ export function PrivateChatWindow({ onBack, headerActions, webcamArea }: Private
           {headerActions}
           <button
             onClick={() => openBlock({ id: other.id, username: other.username })}
-            className="rounded-md px-2 py-1 text-xs text-ink-400 hover:bg-ink-800 hover:text-white"
-            title="Blocca"
+            className="rounded-md p-1.5 text-ink-400 hover:bg-ink-800 hover:text-white"
+            title={t('profile.block')}
           >
-            🚫
+            <Icon name="ban" size={16} />
           </button>
           <button
             onClick={() => openReport({ reportedUserId: other.id, label: other.username })}
-            className="rounded-md px-2 py-1 text-xs text-ink-400 hover:bg-ink-800 hover:text-accent-red"
-            title="Segnala"
+            className="rounded-md p-1.5 text-ink-400 hover:bg-ink-800 hover:text-accent-red"
+            title={t('profile.report')}
           >
-            ⚠️
+            <Icon name="flag" size={16} />
           </button>
         </div>
       </div>

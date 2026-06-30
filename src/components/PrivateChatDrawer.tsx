@@ -1,5 +1,6 @@
 import { usePrivateChat } from '../context/PrivateChatContext'
 import { useI18n } from '../lib/i18n'
+import { Icon } from './Icon'
 import { PrivateThreadList } from './PrivateThreadList'
 import { PrivateChatWindow } from './PrivateChatWindow'
 import { WebcamLaunchButton, WebcamPanel } from './WebcamPanel'
@@ -24,13 +25,16 @@ export function PrivateChatDrawer() {
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-center justify-between border-b border-ink-700 px-3 py-2.5">
-          <h2 className="text-sm font-bold text-white">{t('pm.title')}</h2>
+          <h2 className="flex items-center gap-2 text-sm font-bold text-white">
+            <Icon name="message" size={16} className="text-brand-300" />
+            {t('pm.title')}
+          </h2>
           <button
             onClick={() => setDrawerOpen(false)}
-            className="rounded-md p-1 text-ink-400 hover:bg-ink-800 hover:text-white"
+            className="rounded-md p-1.5 text-ink-400 hover:bg-ink-800 hover:text-white"
             aria-label={t('common.close')}
           >
-            ✕
+            <Icon name="close" size={18} />
           </button>
         </header>
 

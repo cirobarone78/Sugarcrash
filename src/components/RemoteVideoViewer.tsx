@@ -59,7 +59,8 @@ export function RemoteVideoViewer({
       </div>
 
       {/* Indicatore "webcam attiva" */}
-      <span className="absolute left-2 top-2 chip animate-pulse-ring bg-accent-red text-white">
+      <span className="absolute left-2 top-2 chip animate-pulse-ring bg-accent-red font-semibold text-white">
+        <span className="h-1.5 w-1.5 rounded-full bg-white" />
         {t('cam.live')}
       </span>
 

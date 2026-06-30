@@ -8,6 +8,7 @@ import { FirebaseError } from 'firebase/app'
 import { auth } from '../lib/firebase'
 import { useI18n } from '../lib/i18n'
 import { LanguageSwitcher } from './LanguageSwitcher'
+import { Logo, Icon } from './Icon'
 
 export function AuthPage() {
   const { t } = useI18n()
@@ -56,10 +57,10 @@ export function AuthPage() {
           <LanguageSwitcher />
         </div>
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-600 text-3xl shadow-lg">
-            📷
+          <div className="mx-auto mb-3 flex w-fit items-center justify-center rounded-2xl bg-ink-850/60 p-3 shadow-glow">
+            <Logo size={44} />
           </div>
-          <h1 className="text-2xl font-extrabold text-white">RetroCam Chat</h1>
+          <h1 className="text-2xl font-bold text-white">RetroCam Chat</h1>
           <p className="mt-1 text-sm text-ink-400">{t('app.tagline')}</p>
         </div>
 
@@ -128,6 +129,7 @@ export function AuthPage() {
           </div>
 
           <button type="button" disabled={busy} onClick={handleGuest} className="btn-ghost w-full">
+            <Icon name="user" size={16} />
             {t('auth.guest')}
           </button>
           <p className="text-center text-[11px] text-ink-400">{t('auth.guestHint')}</p>

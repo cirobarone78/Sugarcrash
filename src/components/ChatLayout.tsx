@@ -12,6 +12,7 @@ import { SettingsPanel } from './SettingsPanel'
 import { CreateRoomModal } from './CreateRoomModal'
 import { JoinRoomModal } from './JoinRoomModal'
 import { Avatar } from './Avatar'
+import { Icon, Logo, type IconName } from './Icon'
 import { statusColor } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
 import type { Room } from '../lib/types'
@@ -59,36 +60,37 @@ export function ChatLayout() {
   return (
     <div className="flex h-full flex-col">
       {/* Barra superiore */}
-      <header className="flex items-center justify-between border-b border-ink-700 bg-ink-900 px-3 py-2">
+      <header className="flex items-center justify-between border-b border-white/[0.06] bg-ink-900/70 px-3 py-2 backdrop-blur-xl">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-lg">📷</span>
-          <span className="font-extrabold text-white">RetroCam Chat</span>
+          <Logo size={28} />
+          <span className="font-display font-bold text-white">RetroCam</span>
         </div>
         <div className="flex items-center gap-1.5">
           {isGuest && (
             <button
               onClick={() => setSettingsOpen(true)}
-              className="rounded-lg bg-brand-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-brand-500"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-gradient px-3 py-1.5 text-xs font-semibold text-white shadow-glow hover:brightness-110"
               title={t('header.register')}
             >
+              <Icon name="sparkle" size={14} />
               {t('header.register')}
             </button>
           )}
           <button
             onClick={() => setDrawerOpen(true)}
-            className="relative rounded-lg px-2.5 py-1.5 text-sm text-ink-200 hover:bg-ink-800"
+            className="relative icon-btn"
             title={t('header.pm')}
           >
-            💬
+            <Icon name="message" size={18} />
             {totalUnread > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-red px-1 text-[10px] font-bold text-white">
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-red px-1 text-[10px] font-bold text-white">
                 {totalUnread}
               </span>
             )}
           </button>
           <button
             onClick={() => setSettingsOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg px-1.5 py-1 hover:bg-ink-800"
+            className="flex items-center gap-1.5 rounded-xl px-1.5 py-1 hover:bg-ink-800"
             title={t('header.settings')}
           >
             {profile && (
@@ -127,13 +129,13 @@ export function ChatLayout() {
       </div>
 
       {/* Tab bar mobile */}
-      <nav className="grid grid-cols-4 border-t border-ink-700 bg-ink-900 lg:hidden">
-        <TabButton label={t('tab.rooms')} icon="🏠" active={tab === 'rooms'} onClick={() => setTab('rooms')} />
-        <TabButton label={t('tab.chat')} icon="💭" active={tab === 'chat'} onClick={() => setTab('chat')} />
-        <TabButton label={t('tab.users')} icon="👥" active={tab === 'users'} onClick={() => setTab('users')} />
+      <nav className="grid grid-cols-4 border-t border-white/[0.06] bg-ink-900/80 backdrop-blur-xl lg:hidden">
+        <TabButton label={t('tab.rooms')} icon="home" active={tab === 'rooms'} onClick={() => setTab('rooms')} />
+        <TabButton label={t('tab.chat')} icon="chat" active={tab === 'chat'} onClick={() => setTab('chat')} />
+        <TabButton label={t('tab.users')} icon="users" active={tab === 'users'} onClick={() => setTab('users')} />
         <TabButton
           label={t('tab.private')}
-          icon="💬"
+          icon="message"
           active={drawerOpen}
           badge={totalUnread}
           onClick={() => setDrawerOpen(true)}
@@ -172,7 +174,7 @@ function TabButton({
   onClick,
 }: {
   label: string
-  icon: string
+  icon: IconName
   active: boolean
   badge?: number
   onClick: () => void
@@ -180,9 +182,9 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`relative flex flex-col items-center gap-0.5 py-2 text-xs ${active ? 'text-brand-300' : 'text-ink-400'}`}
+      className={`relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${active ? 'text-brand-300' : 'text-ink-400'}`}
     >
-      <span className="text-lg">{icon}</span>
+      <Icon name={icon} size={20} />
       {label}
       {badge !== undefined && badge > 0 && (
         <span className="absolute right-1/4 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-red px-1 text-[10px] font-bold text-white">

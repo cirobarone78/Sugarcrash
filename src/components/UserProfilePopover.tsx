@@ -9,6 +9,7 @@ import { usePresence } from '../context/PresenceContext'
 import { useBlocks } from '../hooks/useBlocks'
 import { statusColor } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
+import { Icon } from './Icon'
 import type { Profile } from '../lib/types'
 
 type ProfileLite = Pick<Profile, 'id' | 'username' | 'avatar_url' | 'status' | 'is_guest'>
@@ -120,11 +121,13 @@ export function UserProfilePopover({
                     onClose()
                   }}
                 >
+                  <Icon name="message" size={16} />
                   {t('profile.pm')}
                 </button>
               )}
               {isBlocked(profile.id) ? (
                 <button className="btn-ghost w-full" onClick={() => void unblock(profile.id)}>
+                  <Icon name="unlock" size={16} />
                   {t('profile.unblock')}
                 </button>
               ) : (
@@ -132,6 +135,7 @@ export function UserProfilePopover({
                   className="btn-ghost w-full"
                   onClick={() => onBlock({ id: profile.id, username: profile.username })}
                 >
+                  <Icon name="ban" size={16} />
                   {t('profile.block')}
                 </button>
               )}
@@ -141,6 +145,7 @@ export function UserProfilePopover({
                   onReport({ reportedUserId: profile.id, label: profile.username })
                 }
               >
+                <Icon name="flag" size={16} />
                 {t('profile.report')}
               </button>
             </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { doc, getDoc } from 'firebase/firestore'
 import { Modal } from './Modal'
 import { Avatar } from './Avatar'
+import { Icon } from './Icon'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { useAuth } from '../context/AuthContext'
 import { useBlocks } from '../hooks/useBlocks'
@@ -137,7 +138,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                     placeholder={t('setup.nicknamePlaceholder')}
                   />
                   <button onClick={saveNickname} className="btn-ghost shrink-0">
-                    {nickSaved ? '✓' : t('common.save')}
+                    {nickSaved ? <Icon name="check" size={16} /> : t('common.save')}
                   </button>
                 </div>
                 {nickErr && <p className="mt-1 text-xs text-accent-red">{nickErr}</p>}
@@ -154,7 +155,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                     placeholder="https://…/avatar.jpg"
                   />
                   <button onClick={saveAvatar} className="btn-ghost shrink-0">
-                    {savedMsg ? '✓' : t('common.save')}
+                    {savedMsg ? <Icon name="check" size={16} /> : t('common.save')}
                   </button>
                 </div>
               </div>
@@ -282,7 +283,10 @@ function UpgradeSection() {
 
   return (
     <section className="space-y-2 rounded-xl border border-brand-500/50 bg-brand-900/30 p-3">
-      <h3 className="text-sm font-bold text-white">{t('upgrade.title')}</h3>
+      <h3 className="flex items-center gap-1.5 text-sm font-bold text-white">
+        <Icon name="sparkle" size={15} className="text-cyan-400" />
+        {t('upgrade.title')}
+      </h3>
       <p className="text-xs text-ink-200">{t('upgrade.body')}</p>
       <form onSubmit={submit} className="space-y-2">
         <input

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Modal } from './Modal'
 import { useI18n } from '../lib/i18n'
+import { Icon } from './Icon'
 
 interface WebcamConsentModalProps {
   open: boolean
@@ -34,8 +35,9 @@ export function WebcamConsentModal({
   return (
     <Modal open={open} onClose={onClose} title={t('cam.consentTitle')}>
       <div className="space-y-4">
-        <div className="rounded-lg border border-accent-amber/40 bg-accent-amber/10 p-3 text-sm text-amber-100">
-          ⚠️ {t('cam.privacy')}
+        <div className="flex gap-2 rounded-lg border border-accent-amber/40 bg-accent-amber/10 p-3 text-sm text-amber-100">
+          <Icon name="alert" size={18} className="mt-0.5 shrink-0 text-accent-amber" />
+          <span>{t('cam.privacy')}</span>
         </div>
 
         <p className="text-sm text-ink-400">
@@ -55,9 +57,11 @@ export function WebcamConsentModal({
 
         <div className="grid grid-cols-2 gap-2">
           <button disabled={!checked || busy} onClick={() => confirm(false)} className="btn-ghost">
+            <Icon name="camera" size={16} />
             {t('cam.videoOnly')}
           </button>
           <button disabled={!checked || busy} onClick={() => confirm(true)} className="btn-primary">
+            <Icon name="mic" size={16} />
             {t('cam.videoAudio')}
           </button>
         </div>

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useI18n } from '../lib/i18n'
+import { Icon } from './Icon'
 
 interface LocalVideoPreviewProps {
   stream: MediaStream
@@ -25,7 +26,8 @@ export function LocalVideoPreview({ stream, videoEnabled }: LocalVideoPreviewPro
         className="h-full w-full -scale-x-100 object-cover"
       />
       {!videoEnabled && (
-        <div className="absolute inset-0 flex items-center justify-center bg-ink-950/90 text-sm text-ink-400">
+        <div className="absolute inset-0 flex items-center justify-center gap-2 bg-ink-950/90 text-sm text-ink-400">
+          <Icon name="videoOff" size={18} />
           {t('cam.videoOff')}
         </div>
       )}
