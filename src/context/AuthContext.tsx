@@ -138,15 +138,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const lower = newName.toLowerCase()
         try {
           await runTransaction(db, async (tx) => {
+            // tutte le letture PRIMA delle scritture (requisito Firestore)
             const unameRef = doc(db, 'usernames', lower)
             const unameSnap = await tx.get(unameRef)
+            const profSnap = await tx.get(ref)
+            const oldLower = profSnap.data()?.username_lower as string | undefined
+            const oldRef = oldLower && oldLower !== lower ? doc(db, 'usernames', oldLower) : null
+            const oldSnap = oldRef ? await tx.get(oldRef) : null
+
             if (unameSnap.exists() && unameSnap.data().uid !== user.uid) {
               throw new Error('USERNAME_TAKEN')
             }
-            const profSnap = await tx.get(ref)
-            const oldLower = profSnap.data()?.username_lower as string | undefined
-            if (oldLower && oldLower !== lower) {
-              tx.delete(doc(db, 'usernames', oldLower))
+            // cancella la vecchia prenotazione solo se esiste ed è mia
+            // (gli ospiti non prenotano mai uno username → niente da cancellare)
+            if (oldRef && oldSnap?.exists() && oldSnap.data().uid === user.uid) {
+              tx.delete(oldRef)
             }
             tx.set(unameRef, { uid: user.uid })
             tx.set(
