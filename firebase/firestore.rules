@@ -21,6 +21,18 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/privateThreads/$(threadId)).data.participants;
     }
 
+    // L'altro partecipante del thread (quello diverso dall'utente corrente).
+    function otherParticipant(threadId) {
+      return threadParticipants(threadId)[0] == uid()
+        ? threadParticipants(threadId)[1]
+        : threadParticipants(threadId)[0];
+    }
+
+    // True se 'blockerId' ha bloccato l'utente corrente.
+    function blockedByCurrent(blockerId) {
+      return exists(/databases/$(database)/documents/blocks/$(blockerId)/list/$(uid()));
+    }
+
     // profiles: lettura pubblica, scrittura solo del proprio
     match /profiles/{userId} {
       allow read: if signedIn();
@@ -73,7 +85,8 @@ service cloud.firestore {
           && request.resource.data.sender_id == uid()
           && uid() in threadParticipants(threadId)
           && request.resource.data.body is string
-          && request.resource.data.body.size() <= 2000;
+          && request.resource.data.body.size() <= 2000
+          && !blockedByCurrent(otherParticipant(threadId));
         allow update, delete: if false;
       }
     }
@@ -84,7 +97,7 @@ service cloud.firestore {
       allow create: if isRegistered()
         && request.resource.data.broadcaster_id == uid()
         && uid() in request.resource.data.participants
-        && !exists(/databases/$(database)/documents/blocks/$(request.resource.data.viewer_id)/list/$(uid()));
+        && !blockedByCurrent(request.resource.data.viewer_id);
       allow update: if signedIn() && uid() in resource.data.participants;
       allow delete: if false;
     }
