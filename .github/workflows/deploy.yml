@@ -1,0 +1,43 @@
+name: Deploy to Firebase Hosting
+
+# Deploy automatico su Firebase Hosting a ogni push.
+# Richiede il secret GitHub: FIREBASE_SERVICE_ACCOUNT (JSON service account).
+# La config Firebase qui sotto è pubblica per design (sicurezza nelle rules).
+
+on:
+  push:
+    branches:
+      - claude/retrocam-chat-pwa-yhh6et
+      - main
+  workflow_dispatch:
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY: AIzaSyD3QD-qLKGZ_8hGX6H703HjjuTz1AA4X_I
+          VITE_FIREBASE_AUTH_DOMAIN: retrocam-chat.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: retrocam-chat
+          VITE_FIREBASE_STORAGE_BUCKET: retrocam-chat.firebasestorage.app
+          VITE_FIREBASE_MESSAGING_SENDER_ID: "1070036988833"
+          VITE_FIREBASE_APP_ID: "1:1070036988833:web:6d03932d700e28bc6451e0"
+          VITE_FIREBASE_DATABASE_URL: https://retrocam-chat-default-rtdb.europe-west1.firebasedatabase.app
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: retrocam-chat
+          channelId: live
