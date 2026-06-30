@@ -5,10 +5,13 @@ import { Avatar } from './Avatar'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { usePrivateChat } from '../context/PrivateChatContext'
+import { usePresence } from '../context/PresenceContext'
 import { useBlocks } from '../hooks/useBlocks'
-import { statusColor, tsToMillis } from '../lib/utils'
+import { statusColor } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
 import type { Profile } from '../lib/types'
+
+type ProfileLite = Pick<Profile, 'id' | 'username' | 'avatar_url' | 'status' | 'is_guest'>
 
 interface UserProfilePopoverProps {
   open: boolean
@@ -27,30 +30,50 @@ export function UserProfilePopover({
 }: UserProfilePopoverProps) {
   const { profile: me, isGuest: meIsGuest } = useAuth()
   const { openThreadWith } = usePrivateChat()
+  const { onlineUsers } = usePresence()
   const { isBlocked, unblock } = useBlocks()
   const { t } = useI18n()
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const [profile, setProfile] = useState<ProfileLite | null>(null)
+  const [failed, setFailed] = useState(false)
+
+  // Dati dell'utente dalla presence (immediati, nessuna lettura Firestore).
+  const presenceUser = onlineUsers.find((u) => u.user_id === userId)
 
   useEffect(() => {
     if (!open || !userId) return
-    setProfile(null)
-    getDoc(doc(db, 'profiles', userId)).then((snap) => {
-      if (!snap.exists()) {
-        setProfile(null)
-        return
-      }
-      const d = snap.data()
+    setFailed(false)
+
+    // 1) se l'utente è online, usiamo subito i dati di presence
+    if (presenceUser) {
       setProfile({
-        id: snap.id,
-        username: (d.username as string) ?? 'utente',
-        avatar_url: (d.avatar_url as string | null) ?? null,
-        status: (d.status as Profile['status']) ?? 'online',
-        is_invisible: Boolean(d.is_invisible),
-        is_guest: Boolean(d.is_guest),
-        created_at: tsToMillis(d.created_at),
-        updated_at: tsToMillis(d.updated_at),
+        id: presenceUser.user_id,
+        username: presenceUser.username,
+        avatar_url: presenceUser.avatar_url,
+        status: presenceUser.status,
+        is_guest: presenceUser.is_guest,
       })
-    })
+      return
+    }
+
+    // 2) altrimenti fallback su Firestore (con gestione errori, niente blocco)
+    setProfile(null)
+    getDoc(doc(db, 'profiles', userId))
+      .then((snap) => {
+        if (!snap.exists()) {
+          setFailed(true)
+          return
+        }
+        const d = snap.data()
+        setProfile({
+          id: snap.id,
+          username: (d.username as string) ?? 'user',
+          avatar_url: (d.avatar_url as string | null) ?? null,
+          status: (d.status as Profile['status']) ?? 'online',
+          is_guest: Boolean(d.is_guest),
+        })
+      })
+      .catch(() => setFailed(true))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, userId])
 
   const isSelf = userId === me?.id
@@ -58,7 +81,9 @@ export function UserProfilePopover({
 
   return (
     <Modal open={open} onClose={onClose} title={t('profile.title')}>
-      {!profile ? (
+      {failed ? (
+        <p className="text-sm text-ink-400">{t('common.error')}</p>
+      ) : !profile ? (
         <p className="text-sm text-ink-400">{t('common.loading')}</p>
       ) : (
         <div className="space-y-4">
