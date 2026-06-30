@@ -24,12 +24,35 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const { blockedIds, unblock } = useBlocks()
   const [sound, setSound] = useState(isSoundEnabled())
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? '')
+  const [nickname, setNickname] = useState(profile?.username ?? '')
+  const [nickErr, setNickErr] = useState<string | null>(null)
+  const [nickSaved, setNickSaved] = useState(false)
   const [blockedProfiles, setBlockedProfiles] = useState<Pick<Profile, 'id' | 'username' | 'avatar_url'>[]>([])
   const [savedMsg, setSavedMsg] = useState(false)
 
   useEffect(() => {
     setAvatarUrl(profile?.avatar_url ?? '')
   }, [profile?.avatar_url])
+
+  useEffect(() => {
+    setNickname(profile?.username ?? '')
+  }, [profile?.username])
+
+  async function saveNickname() {
+    setNickErr(null)
+    const vErr = validateUsername(nickname)
+    if (vErr) {
+      setNickErr(t(vErr))
+      return
+    }
+    const { error } = await updateProfile({ username: nickname.trim() })
+    if (error) {
+      setNickErr(t(error))
+      return
+    }
+    setNickSaved(true)
+    setTimeout(() => setNickSaved(false), 1500)
+  }
 
   useEffect(() => {
     if (!open) return
@@ -100,17 +123,42 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             </div>
           </div>
           {!isGuest && (
-            <div className="flex gap-2">
-              <input
-                className="input"
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-                placeholder="https://…/avatar.jpg"
-              />
-              <button onClick={saveAvatar} className="btn-ghost shrink-0">
-                {savedMsg ? '✓' : t('common.save')}
-              </button>
-            </div>
+            <>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-ink-400">
+                  {t('setup.nickname')}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    className="input"
+                    value={nickname}
+                    maxLength={24}
+                    onChange={(e) => setNickname(e.target.value)}
+                    placeholder={t('setup.nicknamePlaceholder')}
+                  />
+                  <button onClick={saveNickname} className="btn-ghost shrink-0">
+                    {nickSaved ? '✓' : t('common.save')}
+                  </button>
+                </div>
+                {nickErr && <p className="mt-1 text-xs text-accent-red">{nickErr}</p>}
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-ink-400">
+                  {t('setup.avatar')}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    className="input"
+                    value={avatarUrl}
+                    onChange={(e) => setAvatarUrl(e.target.value)}
+                    placeholder="https://…/avatar.jpg"
+                  />
+                  <button onClick={saveAvatar} className="btn-ghost shrink-0">
+                    {savedMsg ? '✓' : t('common.save')}
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </section>
 

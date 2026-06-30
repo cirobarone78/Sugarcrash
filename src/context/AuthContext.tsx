@@ -89,6 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           created_at: serverTimestamp(),
           updated_at: serverTimestamp(),
         })
+      } else if (!u.isAnonymous && snap.data()?.is_guest === true) {
+        // Profilo registrato (email/password) ancora marcato come ospite
+        // (es. upgrade precedente incompleto): correggiamo.
+        tx.set(ref, { is_guest: false, updated_at: serverTimestamp() }, { merge: true })
       }
     }).catch(() => undefined)
   }, [])
