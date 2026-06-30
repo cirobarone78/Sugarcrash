@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useRooms } from '../hooks/useRooms'
+import { usePrivateRooms } from '../hooks/usePrivateRooms'
 import { useAuth } from '../context/AuthContext'
 import { usePrivateChat } from '../context/PrivateChatContext'
 import { RoomList } from './RoomList'
@@ -8,6 +9,8 @@ import { RoomChat } from './RoomChat'
 import { OnlineUsersPanel } from './OnlineUsersPanel'
 import { PrivateChatDrawer } from './PrivateChatDrawer'
 import { SettingsPanel } from './SettingsPanel'
+import { CreateRoomModal } from './CreateRoomModal'
+import { JoinRoomModal } from './JoinRoomModal'
 import { Avatar } from './Avatar'
 import { statusColor } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
@@ -17,22 +20,40 @@ type MobileTab = 'rooms' | 'chat' | 'users' | 'private'
 
 export function ChatLayout() {
   const { rooms } = useRooms()
+  const { rooms: privateRooms, isUnlocked, createRoom, joinRoom } = usePrivateRooms()
   const { profile, isGuest } = useAuth()
   const { totalUnread, drawerOpen, setDrawerOpen } = usePrivateChat()
   const { t } = useI18n()
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [joinTarget, setJoinTarget] = useState<Room | null>(null)
   const [tab, setTab] = useState<MobileTab>('rooms')
 
-  function selectRoom(room: Room) {
+  function enterRoom(room: Room) {
     setSelectedRoom(room)
     setTab('chat')
+  }
+
+  function selectRoom(room: Room) {
+    // stanza privata bloccata → chiedi la password
+    if (room.kind === 'private' && !isUnlocked(room)) {
+      setJoinTarget(room)
+      return
+    }
+    enterRoom(room)
   }
 
   const center = selectedRoom ? (
     <RoomChat room={selectedRoom} onLeave={() => { setSelectedRoom(null); setTab('rooms') }} />
   ) : (
-    <LobbyPage rooms={rooms} onEnter={selectRoom} />
+    <LobbyPage
+      rooms={rooms}
+      privateRooms={privateRooms}
+      onEnter={selectRoom}
+      onCreatePrivate={() => (isGuest ? setSettingsOpen(true) : setCreateOpen(true))}
+      isUnlocked={isUnlocked}
+    />
   )
 
   return (
@@ -121,6 +142,24 @@ export function ChatLayout() {
 
       <PrivateChatDrawer />
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <CreateRoomModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreate={createRoom}
+        onCreated={(room) => {
+          setCreateOpen(false)
+          enterRoom(room)
+        }}
+      />
+      <JoinRoomModal
+        room={joinTarget}
+        onClose={() => setJoinTarget(null)}
+        onJoin={joinRoom}
+        onJoined={(room) => {
+          setJoinTarget(null)
+          enterRoom(room)
+        }}
+      />
     </div>
   )
 }

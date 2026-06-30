@@ -91,6 +91,39 @@ service cloud.firestore {
       }
     }
 
+    // stanze private (create dagli utenti, password "soft" via hash)
+    function roomPwdHash(roomId) {
+      return get(/databases/$(database)/documents/privateRooms/$(roomId)).data.pwd_hash;
+    }
+    function isRoomMember(roomId) {
+      return exists(/databases/$(database)/documents/privateRooms/$(roomId)/members/$(uid()));
+    }
+    match /privateRooms/{roomId} {
+      allow read: if signedIn();
+      allow create: if isRegistered() && request.resource.data.owner_id == uid();
+      allow update, delete: if signedIn() && resource.data.owner_id == uid();
+
+      // membership: entri solo fornendo l'hash corretto della password
+      match /members/{userId} {
+        allow read: if signedIn() && uid() == userId;
+        allow create: if signedIn() && uid() == userId
+          && request.resource.data.pwd_hash == roomPwdHash(roomId);
+        allow delete: if signedIn() && uid() == userId;
+        allow update: if false;
+      }
+
+      // messaggi: leggibili/scrivibili solo dai membri
+      match /messages/{msgId} {
+        allow read: if signedIn() && isRoomMember(roomId);
+        allow create: if signedIn()
+          && isRoomMember(roomId)
+          && request.resource.data.user_id == uid()
+          && request.resource.data.body is string
+          && request.resource.data.body.size() <= 2000;
+        allow update, delete: if false;
+      }
+    }
+
     // sessioni webcam: solo i due partecipanti; chi è bloccato non può invitare
     match /webcamSessions/{sessionId} {
       allow read: if signedIn() && uid() in resource.data.participants;

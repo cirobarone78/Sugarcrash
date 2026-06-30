@@ -122,6 +122,7 @@ export function localizeRooms(lang: Lang): Room[] {
     id: r.id,
     slug: r.slug,
     is_public: r.is_public,
+    kind: 'public' as const,
     name: r.name[lang],
     description: r.description[lang],
     topic: r.topic[lang],

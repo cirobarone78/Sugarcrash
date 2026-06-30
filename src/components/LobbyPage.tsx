@@ -5,11 +5,13 @@ import type { Room } from '../lib/types'
 
 interface LobbyPageProps {
   rooms: Room[]
+  privateRooms: Room[]
   onEnter: (room: Room) => void
+  onCreatePrivate: () => void
+  isUnlocked: (room: Room) => boolean
 }
 
-/** Vista lobby al centro quando nessuna stanza è selezionata. */
-export function LobbyPage({ rooms, onEnter }: LobbyPageProps) {
+export function LobbyPage({ rooms, privateRooms, onEnter, onCreatePrivate, isUnlocked }: LobbyPageProps) {
   const { roomCounts, onlineUsers } = usePresence()
   const { t } = useI18n()
   return (
@@ -22,6 +24,7 @@ export function LobbyPage({ rooms, onEnter }: LobbyPageProps) {
           {t('lobby.users')}.
         </p>
       </div>
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {rooms.map((room) => (
           <RoomCard
@@ -32,6 +35,44 @@ export function LobbyPage({ rooms, onEnter }: LobbyPageProps) {
           />
         ))}
       </div>
+
+      {/* Stanze private */}
+      <div className="mb-3 mt-8 flex items-center justify-between">
+        <h2 className="text-lg font-bold text-white">🔒 {t('rooms.private')}</h2>
+        <button onClick={onCreatePrivate} className="btn-primary text-sm">
+          {t('rooms.create')}
+        </button>
+      </div>
+
+      {privateRooms.length === 0 ? (
+        <p className="text-sm text-ink-400">{t('rooms.noPrivate')}</p>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {privateRooms.map((room) => (
+            <button
+              key={room.id}
+              onClick={() => onEnter(room)}
+              className="card group flex flex-col gap-2 p-4 text-left transition-transform hover:-translate-y-0.5 hover:border-brand-500"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="flex items-center gap-1.5 text-base font-bold text-white">
+                  {isUnlocked(room) ? '🔓' : '🔒'} {room.name}
+                </h3>
+                <span className="chip bg-ink-800 text-ink-200">
+                  <span className="h-2 w-2 rounded-full bg-accent-green" />
+                  {roomCounts[room.slug] ?? 0} {t('rooms.online')}
+                </span>
+              </div>
+              <p className="text-xs text-ink-400">
+                {t('rooms.imagesAllowed')} · 👤 {room.owner_username}
+              </p>
+              <span className="mt-1 text-sm font-semibold text-brand-300 group-hover:text-brand-200">
+                {t('rooms.enter')} →
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

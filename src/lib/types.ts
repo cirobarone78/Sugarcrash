@@ -15,6 +15,8 @@ export interface Profile {
   updated_at: number
 }
 
+export type RoomKind = 'public' | 'private'
+
 export interface Room {
   id: string
   name: string
@@ -22,6 +24,11 @@ export interface Room {
   description: string | null
   topic: string | null
   is_public: boolean
+  kind: RoomKind
+  /** Solo stanze private: consenti l'invio di immagini. */
+  allow_images?: boolean
+  owner_id?: string
+  owner_username?: string
 }
 
 export type MessageType = 'text' | 'system' | 'image'

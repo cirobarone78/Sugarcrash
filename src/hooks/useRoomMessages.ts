@@ -19,6 +19,9 @@ const PAGE_SIZE = 80
 const RATE_LIMIT = 5
 const RATE_WINDOW_MS = 7000
 
+// 'rooms' = stanze pubbliche statiche · 'privateRooms' = stanze private create dagli utenti
+export type RoomCollection = 'rooms' | 'privateRooms'
+
 function mapMessage(id: string, roomId: string, data: Record<string, unknown>): Message {
   return {
     id,
@@ -34,7 +37,7 @@ function mapMessage(id: string, roomId: string, data: Record<string, unknown>): 
   }
 }
 
-export function useRoomMessages(roomId: string | null) {
+export function useRoomMessages(roomId: string | null, coll: RoomCollection = 'rooms') {
   const { profile } = useAuth()
   const { t } = useI18n()
   const [messages, setMessages] = useState<Message[]>([])
@@ -50,17 +53,16 @@ export function useRoomMessages(roomId: string | null) {
     }
     setLoading(true)
     initialized.current = false
-    const col = collection(db, 'rooms', roomId, 'messages')
+    const col = collection(db, coll, roomId, 'messages')
     const q = query(col, orderBy('created_at'), limitToLast(PAGE_SIZE))
     const unsub = onSnapshot(q, (snap) => {
       setMessages(snap.docs.map((d) => mapMessage(d.id, roomId, d.data())))
       setLoading(false)
-      // suono per i nuovi messaggi altrui (dopo il primo caricamento)
       if (initialized.current) {
         for (const change of snap.docChanges()) {
           if (change.type === 'added') {
             const data = change.doc.data()
-            if (data.message_type === 'text' && data.user_id !== profile?.id) {
+            if (data.message_type !== 'system' && data.user_id !== profile?.id) {
               playMessageSound()
             }
           }
@@ -69,7 +71,7 @@ export function useRoomMessages(roomId: string | null) {
       initialized.current = true
     })
     return () => unsub()
-  }, [roomId, profile?.id])
+  }, [roomId, coll, profile?.id])
 
   const sendMessage = useCallback(
     async (raw: string): Promise<{ error: string | null }> => {
@@ -82,7 +84,7 @@ export function useRoomMessages(roomId: string | null) {
       if (sendTimes.current.length >= RATE_LIMIT) return { error: t('chat.tooFast') }
 
       try {
-        await addDoc(collection(db, 'rooms', roomId, 'messages'), {
+        await addDoc(collection(db, coll, roomId, 'messages'), {
           user_id: profile.id,
           body,
           message_type: 'text',
@@ -98,13 +100,39 @@ export function useRoomMessages(roomId: string | null) {
       lastBody.current = body
       return { error: null }
     },
-    [roomId, profile, t],
+    [roomId, coll, profile, t],
+  )
+
+  const sendImage = useCallback(
+    async (url: string): Promise<{ error: string | null }> => {
+      if (!roomId || !profile) return { error: t('common.error') }
+      const now = Date.now()
+      sendTimes.current = sendTimes.current.filter((ts) => now - ts < RATE_WINDOW_MS)
+      if (sendTimes.current.length >= RATE_LIMIT) return { error: t('chat.tooFast') }
+      try {
+        await addDoc(collection(db, coll, roomId, 'messages'), {
+          user_id: profile.id,
+          body: '',
+          message_type: 'image',
+          image_url: url,
+          author_username: profile.username,
+          author_avatar_url: profile.avatar_url,
+          author_is_guest: profile.is_guest,
+          created_at: serverTimestamp(),
+        })
+      } catch {
+        return { error: t('chat.sendFailed') }
+      }
+      sendTimes.current.push(now)
+      return { error: null }
+    },
+    [roomId, coll, profile, t],
   )
 
   const sendSystem = useCallback(
     async (body: string) => {
       if (!roomId || !profile) return
-      await addDoc(collection(db, 'rooms', roomId, 'messages'), {
+      await addDoc(collection(db, coll, roomId, 'messages'), {
         user_id: profile.id,
         body,
         message_type: 'system',
@@ -113,8 +141,8 @@ export function useRoomMessages(roomId: string | null) {
         created_at: serverTimestamp(),
       })
     },
-    [roomId, profile],
+    [roomId, coll, profile],
   )
 
-  return { messages, loading, sendMessage, sendSystem }
+  return { messages, loading, sendMessage, sendImage, sendSystem }
 }
