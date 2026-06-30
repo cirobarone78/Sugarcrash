@@ -6,6 +6,7 @@ import { useRoomMessages } from '../hooks/useRoomMessages'
 import { useAuth } from '../context/AuthContext'
 import { usePresence } from '../context/PresenceContext'
 import { useUI } from '../context/UIContext'
+import { useI18n } from '../lib/i18n'
 import type { Room } from '../lib/types'
 
 interface RoomChatProps {
@@ -17,6 +18,7 @@ export function RoomChat({ room, onLeave }: RoomChatProps) {
   const { profile } = useAuth()
   const { setCurrentRoom } = usePresence()
   const { openUserProfile, openReport } = useUI()
+  const { t } = useI18n()
   const { messages, loading, sendMessage, sendSystem } = useRoomMessages(room.id)
   const joinedRef = useRef<string | null>(null)
 
@@ -27,12 +29,12 @@ export function RoomChat({ room, onLeave }: RoomChatProps) {
     joinedRef.current = room.id
 
     setCurrentRoom(room.slug)
-    void sendSystem(`${profile.username} è entrato nella stanza`)
+    void sendSystem(t('chat.joined', { user: profile.username }))
 
     const username = profile.username
     return () => {
       joinedRef.current = null
-      void sendSystem(`${username} ha lasciato la stanza`)
+      void sendSystem(t('chat.left', { user: username }))
       setCurrentRoom(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -49,11 +51,11 @@ export function RoomChat({ room, onLeave }: RoomChatProps) {
           openReport({
             messageId: m.id,
             reportedUserId: m.user_id ?? undefined,
-            label: `messaggio di ${m.author_username ?? 'utente'}`,
+            label: t('report.msgLabel', { name: m.author_username ?? 'user' }),
           })
         }
       />
-      <MessageInput onSend={sendMessage} placeholder={`Messaggio in ${room.name}…`} />
+      <MessageInput onSend={sendMessage} placeholder={t('chat.placeholderRoom', { room: room.name })} />
     </div>
   )
 }

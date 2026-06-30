@@ -1,4 +1,5 @@
 import type { Room } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 
 interface RoomCardProps {
   room: Room
@@ -7,6 +8,7 @@ interface RoomCardProps {
 }
 
 export function RoomCard({ room, onlineCount, onEnter }: RoomCardProps) {
+  const { t } = useI18n()
   return (
     <button
       onClick={() => onEnter(room)}
@@ -16,7 +18,7 @@ export function RoomCard({ room, onlineCount, onEnter }: RoomCardProps) {
         <h3 className="text-base font-bold text-white">{room.name}</h3>
         <span className="chip bg-ink-800 text-ink-200">
           <span className="h-2 w-2 rounded-full bg-accent-green" />
-          {onlineCount} online
+          {onlineCount} {t('rooms.online')}
         </span>
       </div>
       {room.topic && (
@@ -24,7 +26,7 @@ export function RoomCard({ room, onlineCount, onEnter }: RoomCardProps) {
       )}
       <p className="text-sm text-ink-400">{room.description}</p>
       <span className="mt-1 text-sm font-semibold text-brand-300 group-hover:text-brand-200">
-        Entra →
+        {t('rooms.enter')} →
       </span>
     </button>
   )

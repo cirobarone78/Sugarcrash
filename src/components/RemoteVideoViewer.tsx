@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { shortSessionId } from '../lib/utils'
+import { useI18n } from '../lib/i18n'
 
 interface RemoteVideoViewerProps {
   stream: MediaStream | null
@@ -20,15 +21,16 @@ export function RemoteVideoViewer({
   watermarkName,
   sessionId,
 }: RemoteVideoViewerProps) {
+  const { t } = useI18n()
   const ref = useRef<HTMLVideoElement>(null)
-  const [clock, setClock] = useState(() => new Date().toLocaleTimeString('it-IT'))
+  const [clock, setClock] = useState(() => new Date().toLocaleTimeString())
 
   useEffect(() => {
     if (ref.current) ref.current.srcObject = stream
   }, [stream])
 
   useEffect(() => {
-    const id = setInterval(() => setClock(new Date().toLocaleTimeString('it-IT')), 1000)
+    const id = setInterval(() => setClock(new Date().toLocaleTimeString()), 1000)
     return () => clearInterval(id)
   }, [])
 
@@ -41,7 +43,7 @@ export function RemoteVideoViewer({
       {connecting && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-ink-950/90 text-sm text-ink-400">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-ink-700 border-t-brand-500" />
-          Connessione in corso…
+          {t('cam.connecting')}
         </div>
       )}
 
@@ -58,12 +60,12 @@ export function RemoteVideoViewer({
 
       {/* Indicatore "webcam attiva" */}
       <span className="absolute left-2 top-2 chip animate-pulse-ring bg-accent-red text-white">
-        ● LIVE
+        {t('cam.live')}
       </span>
 
       {/* Avviso anti-diffusione */}
       <p className="pointer-events-none absolute bottom-1 left-0 right-0 text-center text-[10px] text-white/80">
-        Registrazione e diffusione non autorizzata sono vietate
+        {t('cam.recordingWarning')}
       </p>
     </div>
   )

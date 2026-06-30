@@ -25,6 +25,7 @@ import { db } from '../lib/firebase'
 import { useAuth } from './AuthContext'
 import { sanitizeMessage, orderedPair, tsToMillis } from '../lib/utils'
 import { playMessageSound } from '../lib/sounds'
+import { useI18n } from '../lib/i18n'
 import type { PrivateMessage, UserStatus } from '../lib/types'
 
 interface OtherLite {
@@ -77,6 +78,7 @@ function threadId(a: string, b: string): string {
 
 export function PrivateChatProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth()
+  const { t } = useI18n()
   const [threads, setThreads] = useState<ThreadView[]>([])
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null)
   const [activeMessages, setActiveMessages] = useState<PrivateMessage[]>([])
@@ -231,15 +233,13 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
 
   const sendPrivate = useCallback(
     async (raw: string): Promise<{ error: string | null }> => {
-      if (!myId || !activeThreadId) return { error: 'Nessuna conversazione attiva.' }
+      if (!myId || !activeThreadId) return { error: t('pm.noActive') }
       const body = sanitizeMessage(raw)
       if (!body.trim()) return { error: null }
-      if (body === lastBodyRef.current)
-        return { error: 'Hai appena inviato lo stesso messaggio.' }
+      if (body === lastBodyRef.current) return { error: t('chat.dupMessage') }
       const now = Date.now()
-      sendTimes.current = sendTimes.current.filter((t) => now - t < RATE_WINDOW_MS)
-      if (sendTimes.current.length >= RATE_LIMIT)
-        return { error: 'Stai scrivendo troppo in fretta, rallenta un attimo.' }
+      sendTimes.current = sendTimes.current.filter((ts) => now - ts < RATE_WINDOW_MS)
+      if (sendTimes.current.length >= RATE_LIMIT) return { error: t('chat.tooFast') }
 
       try {
         await addDoc(collection(db, 'privateThreads', activeThreadId, 'messages'), {
@@ -256,13 +256,13 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
         })
       } catch {
         // Le Security Rules bloccano l'invio se l'altro utente ti ha bloccato.
-        return { error: 'Non puoi inviare messaggi a questo utente.' }
+        return { error: t('pm.cantSend') }
       }
       sendTimes.current.push(now)
       lastBodyRef.current = body
       return { error: null }
     },
-    [myId, activeThreadId],
+    [myId, activeThreadId, t],
   )
 
   const totalUnread = useMemo(

@@ -1,4 +1,5 @@
 import { usePresence } from '../context/PresenceContext'
+import { useI18n } from '../lib/i18n'
 import type { Room } from '../lib/types'
 
 interface RoomListProps {
@@ -10,10 +11,11 @@ interface RoomListProps {
 /** Lista compatta delle stanze (colonna sinistra desktop / tab Stanze mobile). */
 export function RoomList({ rooms, selectedRoomId, onSelect }: RoomListProps) {
   const { roomCounts } = usePresence()
+  const { t } = useI18n()
   return (
     <nav className="flex flex-col gap-1 p-2">
       <h2 className="px-2 py-1 text-xs font-bold uppercase tracking-wide text-ink-400">
-        Stanze
+        {t('rooms.title')}
       </h2>
       {rooms.map((room) => {
         const active = room.id === selectedRoomId

@@ -27,6 +27,7 @@ import { useBlocks } from '../hooks/useBlocks'
 import { WebcamPeer, isWebRTCSupported } from '../lib/webrtc'
 import { playInviteSound } from '../lib/sounds'
 import { orderedPair, tsToMillis } from '../lib/utils'
+import { useI18n } from '../lib/i18n'
 import type { WebcamSession, WebcamStatus } from '../lib/types'
 
 const CONSENT_KEY = 'retrocam.webcam.consent'
@@ -90,6 +91,7 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth()
   const { openThread, setDrawerOpen } = usePrivateChat()
   const { isBlocked } = useBlocks()
+  const { t } = useI18n()
   const supported = isWebRTCSupported()
 
   const [hasConsent, setHasConsent] = useState(
@@ -168,21 +170,21 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
     async (viewerId: string, withAudio: boolean) => {
       setError(null)
       if (!supported) {
-        setError('Il tuo browser non supporta la webcam (WebRTC/getUserMedia).')
+        setError(t('cam.err.notSupported'))
         return
       }
       if (!myId || viewerId === myId) return
       if (isBlocked(viewerId)) {
-        setError('Hai bloccato questo utente: sbloccalo per usare la webcam.')
+        setError(t('cam.err.blocked'))
         return
       }
       const now = Date.now()
       if (now - lastInviteAt.current < INVITE_COOLDOWN_MS) {
-        setError('Hai appena inviato un invito webcam, attendi qualche secondo.')
+        setError(t('cam.err.cooldown'))
         return
       }
       if (outgoing) {
-        setError('Stai già trasmettendo la webcam.')
+        setError(t('cam.err.already'))
         return
       }
 
@@ -192,10 +194,10 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
       } catch (err) {
         const name = err instanceof DOMException ? err.name : ''
         if (name === 'NotAllowedError' || name === 'SecurityError')
-          setError('Permesso negato. Abilita fotocamera/microfono nelle impostazioni del browser.')
+          setError(t('cam.err.denied'))
         else if (name === 'NotFoundError' || name === 'OverconstrainedError')
-          setError('Nessuna fotocamera disponibile su questo dispositivo.')
-        else setError('Impossibile accedere alla webcam.')
+          setError(t('cam.err.noDevice'))
+        else setError(t('cam.err.generic'))
         return
       }
 
@@ -229,8 +231,8 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
         })
         sessionId = ref.id
       } catch {
-        stream.getTracks().forEach((t) => t.stop())
-        setError("Impossibile inviare l'invito (l'utente potrebbe averti bloccato).")
+        stream.getTracks().forEach((track) => track.stop())
+        setError(t('cam.err.invite'))
         return
       }
       lastInviteAt.current = now
@@ -263,7 +265,7 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
       })
       await peer.connect()
     },
-    [supported, myId, isBlocked, outgoing, endOutgoing],
+    [supported, myId, isBlocked, outgoing, endOutgoing, t],
   )
 
   const acceptInvite = useCallback(async () => {
@@ -350,7 +352,7 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
 
         if (outgoingIdRef.current === s.id) {
           if (s.status === 'declined') {
-            setError('Invito webcam rifiutato.')
+            setError(t('cam.declined'))
             void teardownOutgoing()
           } else if (s.status === 'ended' || s.status === 'cancelled') {
             void teardownOutgoing()
@@ -365,7 +367,7 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
       }
     })
     return () => unsub()
-  }, [myId, teardownOutgoing, teardownIncoming])
+  }, [myId, teardownOutgoing, teardownIncoming, t])
 
   // cleanup al logout
   useEffect(() => {

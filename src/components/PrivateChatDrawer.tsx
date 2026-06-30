@@ -1,4 +1,5 @@
 import { usePrivateChat } from '../context/PrivateChatContext'
+import { useI18n } from '../lib/i18n'
 import { PrivateThreadList } from './PrivateThreadList'
 import { PrivateChatWindow } from './PrivateChatWindow'
 import { WebcamLaunchButton, WebcamPanel } from './WebcamPanel'
@@ -9,6 +10,7 @@ import { WebcamLaunchButton, WebcamPanel } from './WebcamPanel'
  */
 export function PrivateChatDrawer() {
   const { drawerOpen, setDrawerOpen, threads, activeThreadId, closeThread } = usePrivateChat()
+  const { t } = useI18n()
 
   if (!drawerOpen) return null
 
@@ -22,11 +24,11 @@ export function PrivateChatDrawer() {
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-center justify-between border-b border-ink-700 px-3 py-2.5">
-          <h2 className="text-sm font-bold text-white">💬 Messaggi privati</h2>
+          <h2 className="text-sm font-bold text-white">{t('pm.title')}</h2>
           <button
             onClick={() => setDrawerOpen(false)}
             className="rounded-md p-1 text-ink-400 hover:bg-ink-800 hover:text-white"
-            aria-label="Chiudi"
+            aria-label={t('common.close')}
           >
             ✕
           </button>

@@ -12,6 +12,7 @@ import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { sanitizeMessage, tsToMillis } from '../lib/utils'
 import { playMessageSound } from '../lib/sounds'
+import { useI18n } from '../lib/i18n'
 import type { Message } from '../lib/types'
 
 const PAGE_SIZE = 80
@@ -34,6 +35,7 @@ function mapMessage(id: string, roomId: string, data: Record<string, unknown>): 
 
 export function useRoomMessages(roomId: string | null) {
   const { profile } = useAuth()
+  const { t } = useI18n()
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const initialized = useRef(false)
@@ -70,15 +72,13 @@ export function useRoomMessages(roomId: string | null) {
 
   const sendMessage = useCallback(
     async (raw: string): Promise<{ error: string | null }> => {
-      if (!roomId || !profile) return { error: 'Non disponibile.' }
+      if (!roomId || !profile) return { error: t('common.error') }
       const body = sanitizeMessage(raw)
       if (!body.trim()) return { error: null }
-      if (body === lastBody.current)
-        return { error: 'Hai appena inviato lo stesso messaggio.' }
+      if (body === lastBody.current) return { error: t('chat.dupMessage') }
       const now = Date.now()
-      sendTimes.current = sendTimes.current.filter((t) => now - t < RATE_WINDOW_MS)
-      if (sendTimes.current.length >= RATE_LIMIT)
-        return { error: 'Stai scrivendo troppo in fretta, rallenta un attimo.' }
+      sendTimes.current = sendTimes.current.filter((ts) => now - ts < RATE_WINDOW_MS)
+      if (sendTimes.current.length >= RATE_LIMIT) return { error: t('chat.tooFast') }
 
       try {
         await addDoc(collection(db, 'rooms', roomId, 'messages'), {
@@ -91,13 +91,13 @@ export function useRoomMessages(roomId: string | null) {
           created_at: serverTimestamp(),
         })
       } catch {
-        return { error: 'Invio non riuscito.' }
+        return { error: t('chat.sendFailed') }
       }
       sendTimes.current.push(now)
       lastBody.current = body
       return { error: null }
     },
-    [roomId, profile],
+    [roomId, profile, t],
   )
 
   const sendSystem = useCallback(

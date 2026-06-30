@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = useCallback(
     async (patch: Partial<Profile>): Promise<{ error: string | null }> => {
-      if (!user) return { error: 'Non autenticato.' }
+      if (!user) return { error: 'common.error' }
       const ref = doc(db, 'profiles', user.uid)
 
       // Cambio username → transazione per garantire l'unicità.
@@ -158,8 +158,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           })
         } catch (err) {
           if (err instanceof Error && err.message === 'USERNAME_TAKEN')
-            return { error: 'Questo nickname è già in uso. Scegline un altro.' }
-          return { error: 'Impossibile aggiornare il profilo.' }
+            return { error: 'username.taken' }
+          return { error: 'common.error' }
         }
         return { error: null }
       }
@@ -201,12 +201,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: null }
       } catch (err) {
         const code = (err as { code?: string }).code ?? ''
-        if (code === 'auth/email-already-in-use')
-          return { error: 'Esiste già un account con questa email.' }
-        if (code === 'auth/invalid-email') return { error: 'Email non valida.' }
-        if (code === 'auth/weak-password')
-          return { error: 'Password troppo debole (almeno 6 caratteri).' }
-        return { error: 'Registrazione non riuscita. Riprova.' }
+        if (code === 'auth/email-already-in-use') return { error: 'upgrade.err.emailInUse' }
+        if (code === 'auth/invalid-email') return { error: 'upgrade.err.invalidEmail' }
+        if (code === 'auth/weak-password') return { error: 'upgrade.err.weakPassword' }
+        return { error: 'upgrade.err.generic' }
       }
     },
     [user],

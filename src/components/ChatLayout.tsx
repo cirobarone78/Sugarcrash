@@ -10,6 +10,7 @@ import { PrivateChatDrawer } from './PrivateChatDrawer'
 import { SettingsPanel } from './SettingsPanel'
 import { Avatar } from './Avatar'
 import { statusColor } from '../lib/utils'
+import { useI18n } from '../lib/i18n'
 import type { Room } from '../lib/types'
 
 type MobileTab = 'rooms' | 'chat' | 'users' | 'private'
@@ -18,6 +19,7 @@ export function ChatLayout() {
   const { rooms } = useRooms()
   const { profile, isGuest } = useAuth()
   const { totalUnread, drawerOpen, setDrawerOpen } = usePrivateChat()
+  const { t } = useI18n()
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [tab, setTab] = useState<MobileTab>('rooms')
@@ -46,15 +48,15 @@ export function ChatLayout() {
             <button
               onClick={() => setSettingsOpen(true)}
               className="rounded-lg bg-brand-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-brand-500"
-              title="Registrati per sbloccare privati e webcam"
+              title={t('header.register')}
             >
-              ⭐ Registrati
+              {t('header.register')}
             </button>
           )}
           <button
             onClick={() => setDrawerOpen(true)}
             className="relative rounded-lg px-2.5 py-1.5 text-sm text-ink-200 hover:bg-ink-800"
-            title="Messaggi privati"
+            title={t('header.pm')}
           >
             💬
             {totalUnread > 0 && (
@@ -66,7 +68,7 @@ export function ChatLayout() {
           <button
             onClick={() => setSettingsOpen(true)}
             className="flex items-center gap-1.5 rounded-lg px-1.5 py-1 hover:bg-ink-800"
-            title="Impostazioni"
+            title={t('header.settings')}
           >
             {profile && (
               <Avatar username={profile.username} avatarUrl={profile.avatar_url} status={profile.status} size={28} showStatus />
@@ -105,11 +107,11 @@ export function ChatLayout() {
 
       {/* Tab bar mobile */}
       <nav className="grid grid-cols-4 border-t border-ink-700 bg-ink-900 lg:hidden">
-        <TabButton label="Stanze" icon="🏠" active={tab === 'rooms'} onClick={() => setTab('rooms')} />
-        <TabButton label="Chat" icon="💭" active={tab === 'chat'} onClick={() => setTab('chat')} />
-        <TabButton label="Utenti" icon="👥" active={tab === 'users'} onClick={() => setTab('users')} />
+        <TabButton label={t('tab.rooms')} icon="🏠" active={tab === 'rooms'} onClick={() => setTab('rooms')} />
+        <TabButton label={t('tab.chat')} icon="💭" active={tab === 'chat'} onClick={() => setTab('chat')} />
+        <TabButton label={t('tab.users')} icon="👥" active={tab === 'users'} onClick={() => setTab('users')} />
         <TabButton
-          label="Privati"
+          label={t('tab.private')}
           icon="💬"
           active={drawerOpen}
           badge={totalUnread}

@@ -5,6 +5,7 @@ import { useUI } from '../context/UIContext'
 import { MessageInput } from './MessageInput'
 import { Avatar } from './Avatar'
 import { formatTime } from '../lib/utils'
+import { useI18n } from '../lib/i18n'
 
 interface PrivateChatWindowProps {
   onBack: () => void
@@ -18,6 +19,7 @@ export function PrivateChatWindow({ onBack, headerActions, webcamArea }: Private
   const { profile } = useAuth()
   const { openUserProfile, openReport, openBlock } = useUI()
   const { threads, activeThreadId, activeMessages, sendPrivate } = usePrivateChat()
+  const { t } = useI18n()
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const current = threads.find((t) => t.thread.id === activeThreadId)
@@ -29,7 +31,7 @@ export function PrivateChatWindow({ onBack, headerActions, webcamArea }: Private
   if (!current) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-ink-400">
-        Seleziona una conversazione.
+        {t('pm.selectConv')}
       </div>
     )
   }
@@ -42,7 +44,7 @@ export function PrivateChatWindow({ onBack, headerActions, webcamArea }: Private
         <button
           onClick={onBack}
           className="rounded-md px-2 py-1 text-ink-400 hover:bg-ink-800 hover:text-white"
-          aria-label="Indietro"
+          aria-label={t('common.back')}
         >
           ←
         </button>
@@ -77,7 +79,7 @@ export function PrivateChatWindow({ onBack, headerActions, webcamArea }: Private
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
         {activeMessages.length === 0 && (
           <p className="py-6 text-center text-sm text-ink-400">
-            Inizia la conversazione con {other.username}.
+            {t('pm.start', { user: other.username })}
           </p>
         )}
         {activeMessages.map((m) => {
@@ -100,7 +102,7 @@ export function PrivateChatWindow({ onBack, headerActions, webcamArea }: Private
         <div ref={bottomRef} />
       </div>
 
-      <MessageInput onSend={sendPrivate} placeholder={`Messaggio a ${other.username}…`} />
+      <MessageInput onSend={sendPrivate} placeholder={t('pm.placeholder', { user: other.username })} />
     </div>
   )
 }

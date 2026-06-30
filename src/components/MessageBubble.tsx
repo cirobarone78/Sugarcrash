@@ -1,5 +1,6 @@
 import { Avatar } from './Avatar'
 import { formatTime } from '../lib/utils'
+import { useI18n } from '../lib/i18n'
 import type { Message } from '../lib/types'
 
 interface MessageBubbleProps {
@@ -10,6 +11,7 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message, isOwn, onAuthorClick, onReport }: MessageBubbleProps) {
+  const { t } = useI18n()
   if (message.message_type === 'system') {
     return (
       <div className="my-1 text-center">
@@ -35,10 +37,10 @@ export function MessageBubble({ message, isOwn, onAuthorClick, onReport }: Messa
             onClick={() => message.user_id && onAuthorClick?.(message.user_id)}
             className="text-xs font-semibold text-brand-300 hover:underline"
           >
-            {isOwn ? 'Tu' : name}
+            {isOwn ? t('common.you') : name}
           </button>
           {message.author_is_guest && (
-            <span className="chip bg-ink-800 text-[9px] text-ink-400">ospite</span>
+            <span className="chip bg-ink-800 text-[9px] text-ink-400">{t('common.guest')}</span>
           )}
           <span className="text-[10px] text-ink-400">{formatTime(message.created_at)}</span>
         </div>
@@ -56,7 +58,7 @@ export function MessageBubble({ message, isOwn, onAuthorClick, onReport }: Messa
             onClick={() => onReport(message)}
             className="mt-0.5 px-1 text-[10px] text-ink-400 opacity-0 transition-opacity hover:text-accent-red group-hover:opacity-100"
           >
-            Segnala messaggio
+            {t('chat.reportMsg')}
           </button>
         )}
       </div>

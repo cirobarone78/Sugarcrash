@@ -1,22 +1,23 @@
 // Set base di emoticon per il picker. Niente librerie esterne: emoji unicode.
-export const EMOJI_GROUPS: { label: string; emojis: string[] }[] = [
+// `labelKey` è una chiave i18n tradotta nel componente EmojiPicker.
+export const EMOJI_GROUPS: { labelKey: string; emojis: string[] }[] = [
   {
-    label: 'Faccine',
+    labelKey: 'emoji.faces',
     emojis: [
       '😀', '😁', '😂', '🤣', '😊', '😍', '😘', '😜', '🤔', '😎',
       '😏', '😅', '😇', '🙂', '😉', '😢', '😭', '😡', '😱', '🥳',
     ],
   },
   {
-    label: 'Gesti',
+    labelKey: 'emoji.gestures',
     emojis: ['👍', '👎', '👏', '🙏', '👋', '🤝', '✌️', '🤙', '💪', '🫶'],
   },
   {
-    label: 'Cuori & simboli',
+    labelKey: 'emoji.hearts',
     emojis: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🔥', '⭐', '✨', '💯'],
   },
   {
-    label: 'Varie',
+    labelKey: 'emoji.misc',
     emojis: ['🎵', '🎮', '⚽', '🍕', '☕', '🎉', '📷', '🌙', '☀️', '🌈'],
   },
 ]

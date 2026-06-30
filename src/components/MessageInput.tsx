@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { EmojiPicker } from './EmojiPicker'
 import { MAX_MESSAGE_LENGTH } from '../lib/utils'
+import { useI18n } from '../lib/i18n'
 
 interface MessageInputProps {
   onSend: (body: string) => Promise<{ error: string | null }>
@@ -9,6 +10,7 @@ interface MessageInputProps {
 }
 
 export function MessageInput({ onSend, placeholder, disabled }: MessageInputProps) {
+  const { t } = useI18n()
   const [value, setValue] = useState('')
   const [emojiOpen, setEmojiOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -39,7 +41,7 @@ export function MessageInput({ onSend, placeholder, disabled }: MessageInputProp
           type="button"
           onClick={() => setEmojiOpen((v) => !v)}
           className="btn-ghost h-10 px-3 text-lg"
-          aria-label="Emoticon"
+          aria-label="Emoji"
           disabled={disabled}
         >
           😊
@@ -52,7 +54,7 @@ export function MessageInput({ onSend, placeholder, disabled }: MessageInputProp
         <textarea
           rows={1}
           className="input max-h-32 flex-1 resize-none py-2.5"
-          placeholder={placeholder ?? 'Scrivi un messaggio…'}
+          placeholder={placeholder ?? t('chat.placeholder')}
           value={value}
           maxLength={MAX_MESSAGE_LENGTH}
           disabled={disabled}
@@ -65,7 +67,7 @@ export function MessageInput({ onSend, placeholder, disabled }: MessageInputProp
           disabled={disabled || !value.trim()}
           className="btn-primary h-10"
         >
-          Invia
+          {t('common.send')}
         </button>
       </div>
     </div>

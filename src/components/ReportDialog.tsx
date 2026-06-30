@@ -3,6 +3,7 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { Modal } from './Modal'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
+import { useI18n } from '../lib/i18n'
 
 export interface ReportTarget {
   reportedUserId?: string | null
@@ -17,17 +18,18 @@ interface ReportDialogProps {
   target: ReportTarget | null
 }
 
-const REASONS = [
-  'Molestie o insulti',
-  'Spam o pubblicità',
-  'Contenuti sessuali non richiesti',
-  'Minaccia o comportamento pericoloso',
-  'Altro',
+const REASON_KEYS = [
+  'report.reasonHarass',
+  'report.reasonSpam',
+  'report.reasonSexual',
+  'report.reasonThreat',
+  'report.reasonOther',
 ]
 
 export function ReportDialog({ open, onClose, target }: ReportDialogProps) {
   const { profile } = useAuth()
-  const [reason, setReason] = useState(REASONS[0])
+  const { t } = useI18n()
+  const [reasonKey, setReasonKey] = useState(REASON_KEYS[0])
   const [details, setDetails] = useState('')
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
@@ -35,6 +37,7 @@ export function ReportDialog({ open, onClose, target }: ReportDialogProps) {
   async function submit() {
     if (!profile || !target) return
     setBusy(true)
+    const reason = t(reasonKey)
     const fullReason = details.trim() ? `${reason} — ${details.trim()}` : reason
     await addDoc(collection(db, 'reports'), {
       reporter_id: profile.id,
@@ -57,37 +60,40 @@ export function ReportDialog({ open, onClose, target }: ReportDialogProps) {
   function handleClose() {
     setDone(false)
     setDetails('')
-    setReason(REASONS[0])
+    setReasonKey(REASON_KEYS[0])
     onClose()
   }
 
   return (
-    <Modal open={open} onClose={handleClose} title="Segnala abuso">
+    <Modal open={open} onClose={handleClose} title={t('report.title')}>
       {done ? (
         <div className="space-y-4 text-center">
-          <p className="text-sm text-ink-200">
-            Grazie. La segnalazione è stata inviata allo staff.
-          </p>
+          <p className="text-sm text-ink-200">{t('report.done')}</p>
           <button onClick={handleClose} className="btn-primary w-full">
-            Chiudi
+            {t('common.close')}
           </button>
         </div>
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-ink-400">
-            Stai segnalando: <span className="font-semibold text-ink-200">{target?.label}</span>
+            {t('report.reporting')}{' '}
+            <span className="font-semibold text-ink-200">{target?.label}</span>
           </p>
           <div>
-            <label className="mb-1 block text-xs font-medium text-ink-400">Motivo</label>
-            <select className="input" value={reason} onChange={(e) => setReason(e.target.value)}>
-              {REASONS.map((r) => (
-                <option key={r}>{r}</option>
+            <label className="mb-1 block text-xs font-medium text-ink-400">
+              {t('report.reason')}
+            </label>
+            <select className="input" value={reasonKey} onChange={(e) => setReasonKey(e.target.value)}>
+              {REASON_KEYS.map((k) => (
+                <option key={k} value={k}>
+                  {t(k)}
+                </option>
               ))}
             </select>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-400">
-              Dettagli (opzionale)
+              {t('report.details')}
             </label>
             <textarea
               className="input resize-none"
@@ -95,15 +101,15 @@ export function ReportDialog({ open, onClose, target }: ReportDialogProps) {
               value={details}
               maxLength={1000}
               onChange={(e) => setDetails(e.target.value)}
-              placeholder="Cosa è successo?"
+              placeholder={t('report.detailsPlaceholder')}
             />
           </div>
           <div className="flex gap-2">
             <button onClick={handleClose} className="btn-ghost flex-1">
-              Annulla
+              {t('common.cancel')}
             </button>
             <button onClick={submit} disabled={busy} className="btn-danger flex-1">
-              {busy ? 'Invio…' : 'Invia segnalazione'}
+              {busy ? t('report.sending') : t('report.send')}
             </button>
           </div>
         </div>

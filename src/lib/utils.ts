@@ -21,13 +21,13 @@ export function sanitizeMessage(input: string): string {
     .slice(0, MAX_MESSAGE_LENGTH)
 }
 
-/** Valida un nickname: 3-24 caratteri, lettere/numeri/._- */
+/** Valida un nickname: 3-24 caratteri, lettere/numeri/._-
+ *  Ritorna una CHIAVE i18n di errore, oppure null se valido. */
 export function validateUsername(name: string): string | null {
   const trimmed = name.trim()
-  if (trimmed.length < 3) return 'Il nickname deve avere almeno 3 caratteri.'
-  if (trimmed.length > 24) return 'Il nickname può avere al massimo 24 caratteri.'
-  if (!/^[a-zA-Z0-9._-]+$/.test(trimmed))
-    return 'Usa solo lettere, numeri, punto, trattino o underscore.'
+  if (trimmed.length < 3) return 'username.tooShort'
+  if (trimmed.length > 24) return 'username.tooLong'
+  if (!/^[a-zA-Z0-9._-]+$/.test(trimmed)) return 'username.invalid'
   return null
 }
 
@@ -89,13 +89,6 @@ export function colorFromString(str: string): string {
   }
   const hue = Math.abs(hash) % 360
   return `hsl(${hue} 60% 45%)`
-}
-
-/** Etichetta leggibile per uno stato utente. */
-export const statusLabel: Record<string, string> = {
-  online: 'Online',
-  busy: 'Occupato',
-  invisible: 'Invisibile',
 }
 
 export const statusColor: Record<string, string> = {

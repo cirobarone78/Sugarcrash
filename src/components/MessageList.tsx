@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { MessageBubble } from './MessageBubble'
 import { useAuth } from '../context/AuthContext'
 import { useBlocks } from '../hooks/useBlocks'
+import { useI18n } from '../lib/i18n'
 import type { Message } from '../lib/types'
 
 interface MessageListProps {
@@ -14,6 +15,7 @@ interface MessageListProps {
 export function MessageList({ messages, loading, onAuthorClick, onReport }: MessageListProps) {
   const { profile } = useAuth()
   const { isBlocked } = useBlocks()
+  const { t } = useI18n()
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -21,7 +23,7 @@ export function MessageList({ messages, loading, onAuthorClick, onReport }: Mess
   }, [messages.length])
 
   if (loading) {
-    return <div className="flex h-full items-center justify-center text-sm text-ink-400">Caricamento messaggi…</div>
+    return <div className="flex h-full items-center justify-center text-sm text-ink-400">{t('chat.loadingMsgs')}</div>
   }
 
   const visible = messages.filter(
@@ -31,9 +33,7 @@ export function MessageList({ messages, loading, onAuthorClick, onReport }: Mess
   return (
     <div className="flex-1 space-y-2 overflow-y-auto p-3">
       {visible.length === 0 && (
-        <p className="py-8 text-center text-sm text-ink-400">
-          Ancora nessun messaggio. Rompi il ghiaccio! 👋
-        </p>
+        <p className="py-8 text-center text-sm text-ink-400">{t('chat.empty')}</p>
       )}
       {visible.map((m) => (
         <MessageBubble

@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
+import { doc, getDoc } from 'firebase/firestore'
 import { Modal } from './Modal'
 import { Avatar } from './Avatar'
-import { doc, getDoc } from 'firebase/firestore'
+import { LanguageSwitcher } from './LanguageSwitcher'
 import { useAuth } from '../context/AuthContext'
 import { useBlocks } from '../hooks/useBlocks'
 import { db } from '../lib/firebase'
 import { isSoundEnabled, setSoundEnabled } from '../lib/sounds'
-import { statusColor, statusLabel, validateUsername } from '../lib/utils'
+import { statusColor, validateUsername } from '../lib/utils'
+import { useI18n } from '../lib/i18n'
 import type { Profile, UserStatus } from '../lib/types'
 
 interface SettingsPanelProps {
@@ -17,6 +19,7 @@ interface SettingsPanelProps {
 const STATUSES: UserStatus[] = ['online', 'busy', 'invisible']
 
 export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
+  const { t } = useI18n()
   const { profile, isGuest, setStatus, updateProfile, signOut } = useAuth()
   const { blockedIds, unblock } = useBlocks()
   const [sound, setSound] = useState(isSoundEnabled())
@@ -62,9 +65,21 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
 
   if (!profile) return null
 
+  const statusLabels: Record<UserStatus, string> = {
+    online: t('status.online'),
+    busy: t('status.busy'),
+    invisible: t('status.invisible'),
+  }
+
   return (
-    <Modal open={open} onClose={onClose} title="Impostazioni" maxWidth="max-w-lg">
+    <Modal open={open} onClose={onClose} title={t('settings.title')} maxWidth="max-w-lg">
       <div className="space-y-5">
+        {/* Lingua */}
+        <section className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-ink-200">{t('settings.language')}</h3>
+          <LanguageSwitcher />
+        </section>
+
         {/* Account ospite → upgrade */}
         {isGuest && <UpgradeSection />}
 
@@ -76,13 +91,11 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               <p className="flex items-center gap-2 font-bold text-white">
                 {profile.username}
                 {isGuest && (
-                  <span className="chip bg-ink-800 text-[10px] text-ink-400">ospite</span>
+                  <span className="chip bg-ink-800 text-[10px] text-ink-400">{t('common.guest')}</span>
                 )}
               </p>
               <p className="text-xs text-ink-400">
-                {isGuest
-                  ? 'Avatar e nickname riservato disponibili dopo la registrazione.'
-                  : "Modifica l'avatar incollando un URL immagine."}
+                {isGuest ? t('settings.guestAvatarHint') : t('settings.avatarHint')}
               </p>
             </div>
           </div>
@@ -95,7 +108,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                 placeholder="https://…/avatar.jpg"
               />
               <button onClick={saveAvatar} className="btn-ghost shrink-0">
-                {savedMsg ? '✓' : 'Salva'}
+                {savedMsg ? '✓' : t('common.save')}
               </button>
             </div>
           )}
@@ -103,7 +116,9 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
 
         {/* Stato */}
         <section>
-          <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">Stato</h3>
+          <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">
+            {t('settings.status')}
+          </h3>
           <div className="grid grid-cols-3 gap-2">
             {STATUSES.map((s) => (
               <button
@@ -116,30 +131,28 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                 }`}
               >
                 <span className="h-2 w-2 rounded-full" style={{ background: statusColor[s] }} />
-                {statusLabel[s]}
+                {statusLabels[s]}
               </button>
             ))}
           </div>
           {profile.status === 'invisible' && (
-            <p className="mt-1.5 text-xs text-ink-400">
-              Da invisibile non compari nella lista utenti né nei conteggi, ma continui a ricevere i messaggi.
-            </p>
+            <p className="mt-1.5 text-xs text-ink-400">{t('settings.invisibleHint')}</p>
           )}
         </section>
 
         {/* Suono */}
-        <section className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-ink-200">Suono nuovi messaggi</h3>
-            <p className="text-xs text-ink-400">Un breve segnale acustico per i nuovi messaggi.</p>
+        <section className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-ink-200">{t('settings.sound')}</h3>
+            <p className="text-xs text-ink-400">{t('settings.soundHint')}</p>
           </div>
           <button
             onClick={toggleSound}
-            className={`relative h-6 w-11 rounded-full transition-colors ${sound ? 'bg-brand-600' : 'bg-ink-700'}`}
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${sound ? 'bg-brand-600' : 'bg-ink-700'}`}
             aria-pressed={sound}
           >
             <span
-              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${sound ? 'translate-x-5' : 'translate-x-0.5'}`}
+              className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white transition-all ${sound ? 'left-[22px]' : 'left-0.5'}`}
             />
           </button>
         </section>
@@ -147,10 +160,10 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
         {/* Utenti bloccati */}
         <section>
           <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">
-            Utenti bloccati · {blockedProfiles.length}
+            {t('settings.blocked')} · {blockedProfiles.length}
           </h3>
           {blockedProfiles.length === 0 ? (
-            <p className="text-sm text-ink-400">Nessun utente bloccato.</p>
+            <p className="text-sm text-ink-400">{t('settings.noBlocked')}</p>
           ) : (
             <div className="space-y-1">
               {blockedProfiles.map((b) => (
@@ -160,7 +173,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                     <span className="text-sm text-ink-200">{b.username}</span>
                   </span>
                   <button onClick={() => void unblock(b.id)} className="text-xs font-semibold text-brand-300 hover:underline">
-                    Sblocca
+                    {t('settings.unblock')}
                   </button>
                 </div>
               ))}
@@ -169,7 +182,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
         </section>
 
         <button onClick={() => void signOut()} className="btn-danger w-full">
-          {isGuest ? 'Esci' : "Esci dall'account"}
+          {t('settings.signout')}
         </button>
       </div>
     </Modal>
@@ -178,6 +191,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
 
 /** Sezione di upgrade da ospite a utente registrato. */
 function UpgradeSection() {
+  const { t } = useI18n()
   const { upgradeAccount, updateProfile } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -190,7 +204,7 @@ function UpgradeSection() {
     e.preventDefault()
     const vErr = validateUsername(username)
     if (vErr) {
-      setError(vErr)
+      setError(t(vErr))
       return
     }
     setBusy(true)
@@ -198,17 +212,13 @@ function UpgradeSection() {
     const { error: upErr } = await upgradeAccount(email, password)
     if (upErr) {
       setBusy(false)
-      setError(upErr)
+      setError(t(upErr))
       return
     }
-    // riserva il nickname scelto
     const { error: nameErr } = await updateProfile({ username: username.trim() })
     setBusy(false)
     if (nameErr) {
-      setError(
-        nameErr +
-          ' Account registrato: puoi scegliere un altro nickname qui sopra.',
-      )
+      setError(t(nameErr) + t('upgrade.nameRetry'))
       return
     }
     setDone(true)
@@ -217,23 +227,20 @@ function UpgradeSection() {
   if (done) {
     return (
       <section className="rounded-xl border border-accent-green/40 bg-accent-green/10 p-3 text-sm text-green-100">
-        ✅ Account registrato! Ora hai nickname riservato, messaggi privati e webcam.
+        {t('upgrade.done')}
       </section>
     )
   }
 
   return (
     <section className="space-y-2 rounded-xl border border-brand-500/50 bg-brand-900/30 p-3">
-      <h3 className="text-sm font-bold text-white">⭐ Diventa membro</h3>
-      <p className="text-xs text-ink-200">
-        Registrati mantenendo questo account: sblocchi <b>nickname riservato</b>,{' '}
-        <b>messaggi privati</b>, <b>webcam</b> e avatar.
-      </p>
+      <h3 className="text-sm font-bold text-white">{t('upgrade.title')}</h3>
+      <p className="text-xs text-ink-200">{t('upgrade.body')}</p>
       <form onSubmit={submit} className="space-y-2">
         <input
           type="text"
           className="input"
-          placeholder="Nickname (3-24 caratteri)"
+          placeholder={t('upgrade.nickname')}
           value={username}
           maxLength={24}
           onChange={(e) => setUsername(e.target.value)}
@@ -242,7 +249,7 @@ function UpgradeSection() {
           type="email"
           required
           className="input"
-          placeholder="Email"
+          placeholder={t('auth.email')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -251,13 +258,13 @@ function UpgradeSection() {
           required
           minLength={6}
           className="input"
-          placeholder="Password (min 6 caratteri)"
+          placeholder={t('auth.password')}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
         {error && <p className="text-xs text-accent-red">{error}</p>}
         <button type="submit" disabled={busy} className="btn-primary w-full">
-          {busy ? 'Registrazione…' : 'Registrati e salva il nickname'}
+          {busy ? t('upgrade.submitting') : t('upgrade.submit')}
         </button>
       </form>
     </section>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useWebcam } from '../context/WebcamContext'
 import { useAuth } from '../context/AuthContext'
 import { useUI } from '../context/UIContext'
+import { useI18n } from '../lib/i18n'
 import { LocalVideoPreview } from './LocalVideoPreview'
 import { RemoteVideoViewer } from './RemoteVideoViewer'
 import { WebcamControls } from './WebcamControls'
@@ -16,6 +17,7 @@ interface WebcamLaunchButtonProps {
 export function WebcamLaunchButton({ otherId, otherName }: WebcamLaunchButtonProps) {
   const { supported, outgoing, hasConsent, giveConsent, startBroadcast } = useWebcam()
   const { isGuest } = useAuth()
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
 
   // La webcam è una funzione riservata agli utenti registrati.
@@ -23,11 +25,7 @@ export function WebcamLaunchButton({ otherId, otherName }: WebcamLaunchButtonPro
 
   if (!supported) {
     return (
-      <button
-        disabled
-        title="Webcam non supportata da questo browser"
-        className="rounded-md px-2 py-1 text-xs text-ink-600"
-      >
+      <button disabled title={t('cam.notSupported')} className="rounded-md px-2 py-1 text-xs text-ink-600">
         📷
       </button>
     )
@@ -39,7 +37,7 @@ export function WebcamLaunchButton({ otherId, otherName }: WebcamLaunchButtonPro
         onClick={() => setOpen(true)}
         disabled={!!outgoing}
         className="rounded-md px-2 py-1 text-xs text-ink-400 hover:bg-ink-800 hover:text-white disabled:opacity-40"
-        title={outgoing ? 'Webcam già attiva' : 'Apri webcam'}
+        title={outgoing ? t('cam.alreadyOn') : t('cam.open')}
       >
         📷
       </button>
@@ -67,6 +65,7 @@ interface WebcamPanelProps {
 export function WebcamPanel({ otherId, otherName }: WebcamPanelProps) {
   const { profile } = useAuth()
   const { openBlock, openReport } = useUI()
+  const { t } = useI18n()
   const {
     outgoing,
     incoming,
@@ -101,22 +100,22 @@ export function WebcamPanel({ otherId, otherName }: WebcamPanelProps) {
             sessionId={incoming.session.id}
           />
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs text-ink-400">Webcam di {otherName}</span>
+            <span className="text-xs text-ink-400">{t('cam.webcamOf', { name: otherName })}</span>
             <div className="flex gap-1.5">
               <button
                 onClick={() => openBlock({ id: otherId, username: otherName })}
                 className="btn-ghost text-xs"
               >
-                🚫 Blocca
+                {t('cam.block')}
               </button>
               <button
                 onClick={() => openReport({ reportedUserId: otherId, label: otherName })}
                 className="btn-ghost text-xs text-accent-red"
               >
-                ⚠️ Segnala
+                {t('cam.report')}
               </button>
               <button onClick={() => void endIncoming()} className="btn-danger text-xs">
-                Chiudi
+                {t('common.close')}
               </button>
             </div>
           </div>
@@ -136,16 +135,12 @@ export function WebcamPanel({ otherId, otherName }: WebcamPanelProps) {
             onClose={() => void endOutgoing()}
           />
           {outgoing.connState !== 'connected' && (
-            <p className="text-center text-xs text-ink-400">
-              In attesa che {otherName} accetti l'invito…
-            </p>
+            <p className="text-center text-xs text-ink-400">{t('cam.waiting', { name: otherName })}</p>
           )}
         </div>
       )}
 
-      <p className="text-center text-[10px] text-ink-400">
-        Webcam non registrata dalla piattaforma. Nessuno stream viene salvato sui server.
-      </p>
+      <p className="text-center text-[10px] text-ink-400">{t('cam.noRecordingNote')}</p>
     </div>
   )
 }

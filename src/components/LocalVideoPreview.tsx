@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useI18n } from '../lib/i18n'
 
 interface LocalVideoPreviewProps {
   stream: MediaStream
@@ -7,6 +8,7 @@ interface LocalVideoPreviewProps {
 
 /** Anteprima locale (specchiata) per chi trasmette. Audio sempre muto qui. */
 export function LocalVideoPreview({ stream, videoEnabled }: LocalVideoPreviewProps) {
+  const { t } = useI18n()
   const ref = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
@@ -24,10 +26,10 @@ export function LocalVideoPreview({ stream, videoEnabled }: LocalVideoPreviewPro
       />
       {!videoEnabled && (
         <div className="absolute inset-0 flex items-center justify-center bg-ink-950/90 text-sm text-ink-400">
-          📷 Video disattivato
+          {t('cam.videoOff')}
         </div>
       )}
-      <span className="absolute left-2 top-2 chip bg-black/60 text-white">Tu (anteprima)</span>
+      <span className="absolute left-2 top-2 chip bg-black/60 text-white">{t('cam.youPreview')}</span>
     </div>
   )
 }
