@@ -1,21 +1,19 @@
-import { type ReactNode } from 'react'
 import { usePrivateChat } from '../context/PrivateChatContext'
 import { PrivateThreadList } from './PrivateThreadList'
 import { PrivateChatWindow } from './PrivateChatWindow'
-
-interface PrivateChatDrawerProps {
-  /** Slot webcam opzionali (Fase 2). */
-  headerActions?: ReactNode
-  webcamArea?: ReactNode
-}
+import { WebcamLaunchButton, WebcamPanel } from './WebcamPanel'
 
 /**
  * Pannello chat private: overlay a destra su desktop, schermo intero su mobile.
+ * Integra i controlli webcam (Fase 2) per la conversazione attiva.
  */
-export function PrivateChatDrawer({ headerActions, webcamArea }: PrivateChatDrawerProps) {
-  const { drawerOpen, setDrawerOpen, activeThreadId, closeThread } = usePrivateChat()
+export function PrivateChatDrawer() {
+  const { drawerOpen, setDrawerOpen, threads, activeThreadId, closeThread } = usePrivateChat()
 
   if (!drawerOpen) return null
+
+  const current = threads.find((t) => t.thread.id === activeThreadId)
+  const other = current?.other
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end bg-black/50" onClick={() => setDrawerOpen(false)}>
@@ -35,11 +33,11 @@ export function PrivateChatDrawer({ headerActions, webcamArea }: PrivateChatDraw
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col">
-          {activeThreadId ? (
+          {activeThreadId && other ? (
             <PrivateChatWindow
               onBack={closeThread}
-              headerActions={headerActions}
-              webcamArea={webcamArea}
+              headerActions={<WebcamLaunchButton otherId={other.id} otherName={other.username} />}
+              webcamArea={<WebcamPanel otherId={other.id} otherName={other.username} />}
             />
           ) : (
             <PrivateThreadList />

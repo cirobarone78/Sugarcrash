@@ -3,9 +3,11 @@ import { PresenceProvider } from './context/PresenceContext'
 import { PrivateChatProvider } from './context/PrivateChatContext'
 import { BlocksProvider } from './hooks/useBlocks'
 import { UIProvider } from './context/UIContext'
+import { WebcamProvider } from './context/WebcamContext'
 import { AuthPage } from './components/AuthPage'
 import { ProfileSetup } from './components/ProfileSetup'
 import { ChatLayout } from './components/ChatLayout'
+import { WebcamInviteBanner } from './components/WebcamInviteBanner'
 import { isSupabaseConfigured } from './lib/supabase'
 
 function ConfigNotice() {
@@ -44,7 +46,10 @@ function AuthedApp() {
       <PresenceProvider>
         <PrivateChatProvider>
           <UIProvider>
-            <ChatLayout />
+            <WebcamProvider>
+              <ChatLayout />
+              <WebcamInviteBanner />
+            </WebcamProvider>
           </UIProvider>
         </PrivateChatProvider>
       </PresenceProvider>

@@ -252,7 +252,10 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
     [threads],
   )
 
-  const activeMessages = activeThreadId ? messagesByThread[activeThreadId] ?? [] : []
+  const activeMessages = useMemo(
+    () => (activeThreadId ? messagesByThread[activeThreadId] ?? [] : []),
+    [activeThreadId, messagesByThread],
+  )
 
   const value = useMemo<PrivateChatContextValue>(
     () => ({
