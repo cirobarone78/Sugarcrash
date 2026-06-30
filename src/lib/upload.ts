@@ -1,31 +1,65 @@
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { storage } from './firebase'
+// Invio immagini SENZA storage esterno: l'immagine viene ridimensionata e
+// compressa lato browser e incorporata nel messaggio come data URL (JPEG).
+// Così resta dentro Firestore (piano gratuito, nessuna carta) e nessun file
+// viene archiviato su un servizio a parte.
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB
+const MAX_DIMENSION = 1024 // lato massimo in px
+const MAX_DATAURL_BYTES = 700 * 1024 // ~700 KB (sotto il limite doc Firestore 1MB)
 
 export interface UploadResult {
   url?: string
   errorKey?: string
 }
 
+function loadImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const objectUrl = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      resolve(img)
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error('decode'))
+    }
+    img.src = objectUrl
+  })
+}
+
 /**
- * Carica un'immagine di chat su Firebase Storage in chat-images/<uid>/<uuid>.<ext>
- * e restituisce l'URL pubblico (download URL). Valida tipo e dimensione lato client;
- * le Storage Rules ripetono i controlli lato server.
+ * Comprime un'immagine in un data URL JPEG ridimensionato.
+ * Ritorna { url } col data URL, oppure { errorKey } in caso di errore.
  */
-export async function uploadChatImage(file: File, uid: string): Promise<UploadResult> {
+export async function compressImageToDataUrl(file: File): Promise<UploadResult> {
   if (!file.type.startsWith('image/')) return { errorKey: 'chat.imageType' }
-  if (file.size > MAX_IMAGE_BYTES) return { errorKey: 'chat.imageTooBig' }
 
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
-  const name = `${crypto.randomUUID()}.${ext}`
-  const objectRef = ref(storage, `chat-images/${uid}/${name}`)
-
+  let img: HTMLImageElement
   try {
-    await uploadBytes(objectRef, file, { contentType: file.type })
-    const url = await getDownloadURL(objectRef)
-    return { url }
+    img = await loadImage(file)
   } catch {
     return { errorKey: 'chat.uploadFailed' }
   }
+
+  const scale = Math.min(1, MAX_DIMENSION / Math.max(img.width, img.height))
+  const w = Math.max(1, Math.round(img.width * scale))
+  const h = Math.max(1, Math.round(img.height * scale))
+
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return { errorKey: 'chat.uploadFailed' }
+  ctx.drawImage(img, 0, 0, w, h)
+
+  // riduci progressivamente la qualità finché non sta sotto il limite
+  let quality = 0.72
+  let dataUrl = canvas.toDataURL('image/jpeg', quality)
+  while (dataUrl.length > MAX_DATAURL_BYTES && quality > 0.4) {
+    quality -= 0.12
+    dataUrl = canvas.toDataURL('image/jpeg', quality)
+  }
+  if (dataUrl.length > MAX_DATAURL_BYTES) return { errorKey: 'chat.imageTooBig' }
+
+  return { url: dataUrl }
 }

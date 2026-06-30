@@ -5,9 +5,6 @@
   "database": {
     "rules": "firebase/database.rules.json"
   },
-  "storage": {
-    "rules": "firebase/storage.rules"
-  },
   "hosting": {
     "public": "dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],

@@ -2,8 +2,7 @@ import { useRef, useState } from 'react'
 import { EmojiPicker } from './EmojiPicker'
 import { MAX_MESSAGE_LENGTH } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
-import { useAuth } from '../context/AuthContext'
-import { uploadChatImage } from '../lib/upload'
+import { compressImageToDataUrl } from '../lib/upload'
 
 interface MessageInputProps {
   onSend: (body: string) => Promise<{ error: string | null }>
@@ -15,7 +14,6 @@ interface MessageInputProps {
 
 export function MessageInput({ onSend, onSendImage, placeholder, disabled }: MessageInputProps) {
   const { t } = useI18n()
-  const { profile } = useAuth()
   const [value, setValue] = useState('')
   const [emojiOpen, setEmojiOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -43,10 +41,10 @@ export function MessageInput({ onSend, onSendImage, placeholder, disabled }: Mes
   async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = '' // consente di re-inviare lo stesso file
-    if (!file || !onSendImage || !profile) return
+    if (!file || !onSendImage) return
     setError(null)
     setUploading(true)
-    const { url, errorKey } = await uploadChatImage(file, profile.id)
+    const { url, errorKey } = await compressImageToDataUrl(file)
     if (errorKey || !url) {
       setUploading(false)
       setError(t(errorKey ?? 'chat.uploadFailed'))
