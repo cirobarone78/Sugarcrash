@@ -26,6 +26,7 @@ function mapMessage(id: string, roomId: string, data: Record<string, unknown>): 
     user_id: (data.user_id as string | null) ?? null,
     body: (data.body as string) ?? '',
     message_type: (data.message_type as Message['message_type']) ?? 'text',
+    image_url: (data.image_url as string | null) ?? null,
     created_at: tsToMillis(data.created_at),
     author_username: (data.author_username as string | null) ?? null,
     author_avatar_url: (data.author_avatar_url as string | null) ?? null,
@@ -100,6 +101,32 @@ export function useRoomMessages(roomId: string | null) {
     [roomId, profile, t],
   )
 
+  const sendImage = useCallback(
+    async (url: string): Promise<{ error: string | null }> => {
+      if (!roomId || !profile) return { error: t('common.error') }
+      const now = Date.now()
+      sendTimes.current = sendTimes.current.filter((ts) => now - ts < RATE_WINDOW_MS)
+      if (sendTimes.current.length >= RATE_LIMIT) return { error: t('chat.tooFast') }
+      try {
+        await addDoc(collection(db, 'rooms', roomId, 'messages'), {
+          user_id: profile.id,
+          body: '',
+          message_type: 'image',
+          image_url: url,
+          author_username: profile.username,
+          author_avatar_url: profile.avatar_url,
+          author_is_guest: profile.is_guest,
+          created_at: serverTimestamp(),
+        })
+      } catch {
+        return { error: t('chat.sendFailed') }
+      }
+      sendTimes.current.push(now)
+      return { error: null }
+    },
+    [roomId, profile, t],
+  )
+
   const sendSystem = useCallback(
     async (body: string) => {
       if (!roomId || !profile) return
@@ -115,5 +142,5 @@ export function useRoomMessages(roomId: string | null) {
     [roomId, profile],
   )
 
-  return { messages, loading, sendMessage, sendSystem }
+  return { messages, loading, sendMessage, sendImage, sendSystem }
 }

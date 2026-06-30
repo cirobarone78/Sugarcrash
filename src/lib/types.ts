@@ -24,7 +24,7 @@ export interface Room {
   is_public: boolean
 }
 
-export type MessageType = 'text' | 'system'
+export type MessageType = 'text' | 'system' | 'image'
 
 export interface Message {
   id: string
@@ -32,6 +32,7 @@ export interface Message {
   user_id: string | null
   body: string
   message_type: MessageType
+  image_url?: string | null
   created_at: number
   // denormalizzati al momento dell'invio (Firestore-friendly)
   author_username?: string | null
@@ -52,6 +53,7 @@ export interface PrivateMessage {
   thread_id: string
   sender_id: string
   body: string
+  image_url?: string | null
   created_at: number
   read_at: number | null
 }

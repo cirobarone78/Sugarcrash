@@ -44,15 +44,26 @@ export function MessageBubble({ message, isOwn, onAuthorClick, onReport }: Messa
           )}
           <span className="text-[10px] text-ink-400">{formatTime(message.created_at)}</span>
         </div>
-        <div
-          className={`whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm ${
-            isOwn
-              ? 'rounded-tr-sm bg-brand-600 text-white'
-              : 'rounded-tl-sm bg-ink-800 text-ink-200'
-          }`}
-        >
-          {message.body}
-        </div>
+        {message.message_type === 'image' && message.image_url ? (
+          <a href={message.image_url} target="_blank" rel="noreferrer" className="block">
+            <img
+              src={message.image_url}
+              alt=""
+              loading="lazy"
+              className="max-h-64 max-w-full rounded-2xl border border-ink-700 object-cover"
+            />
+          </a>
+        ) : (
+          <div
+            className={`whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm ${
+              isOwn
+                ? 'rounded-tr-sm bg-brand-600 text-white'
+                : 'rounded-tl-sm bg-ink-800 text-ink-200'
+            }`}
+          >
+            {message.body}
+          </div>
+        )}
         {!isOwn && onReport && (
           <button
             onClick={() => onReport(message)}

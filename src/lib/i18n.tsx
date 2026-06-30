@@ -96,6 +96,12 @@ const dict: Record<Lang, Record<string, string>> = {
     'chat.dupMessage': 'You just sent the same message.',
     'chat.tooFast': 'You are typing too fast, slow down a little.',
     'chat.sendFailed': 'Send failed.',
+    'chat.photo': '📷 Photo',
+    'chat.attachImage': 'Send image',
+    'chat.uploading': 'Uploading…',
+    'chat.imageType': 'Only image files are allowed.',
+    'chat.imageTooBig': 'Image too large (max 5 MB).',
+    'chat.uploadFailed': 'Image upload failed.',
 
     // online users
     'users.title': 'Online users',
@@ -324,6 +330,12 @@ const dict: Record<Lang, Record<string, string>> = {
     'chat.dupMessage': 'Hai appena inviato lo stesso messaggio.',
     'chat.tooFast': 'Stai scrivendo troppo in fretta, rallenta un attimo.',
     'chat.sendFailed': 'Invio non riuscito.',
+    'chat.photo': '📷 Foto',
+    'chat.attachImage': 'Invia immagine',
+    'chat.uploading': 'Caricamento…',
+    'chat.imageType': 'Sono ammesse solo immagini.',
+    'chat.imageTooBig': 'Immagine troppo grande (max 5 MB).',
+    'chat.uploadFailed': 'Caricamento immagine non riuscito.',
 
     'users.title': 'Utenti online',
     'users.empty': 'Nessuno qui per ora.',

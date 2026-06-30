@@ -67,6 +67,7 @@ interface PrivateChatContextValue {
   openThread: (threadId: string) => void
   closeThread: () => void
   sendPrivate: (body: string) => Promise<{ error: string | null }>
+  sendPrivateImage: (url: string) => Promise<{ error: string | null }>
 }
 
 const PrivateChatContext = createContext<PrivateChatContextValue | undefined>(undefined)
@@ -190,6 +191,7 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
             thread_id: activeThreadId,
             sender_id: (data.sender_id as string) ?? '',
             body: (data.body as string) ?? '',
+            image_url: (data.image_url as string | null) ?? null,
             created_at: tsToMillis(data.created_at),
             read_at: data.read_at ? tsToMillis(data.read_at) : null,
           }
@@ -316,6 +318,43 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
     [myId, activeThreadId, activeOther, t],
   )
 
+  const sendPrivateImage = useCallback(
+    async (url: string): Promise<{ error: string | null }> => {
+      if (!myId || !activeThreadId) return { error: t('pm.noActive') }
+      const now = Date.now()
+      sendTimes.current = sendTimes.current.filter((ts) => now - ts < RATE_WINDOW_MS)
+      if (sendTimes.current.length >= RATE_LIMIT) return { error: t('chat.tooFast') }
+      try {
+        if (activeOther) {
+          const [a, b] = orderedPair(myId, activeOther.id)
+          await setDoc(
+            doc(db, 'privateThreads', activeThreadId),
+            { user_a: a, user_b: b, participants: [a, b] },
+            { merge: true },
+          )
+        }
+        await addDoc(collection(db, 'privateThreads', activeThreadId, 'messages'), {
+          sender_id: myId,
+          body: '',
+          image_url: url,
+          created_at: serverTimestamp(),
+          read_at: null,
+        })
+        await updateDoc(doc(db, 'privateThreads', activeThreadId), {
+          last_body: '📷',
+          last_at: serverTimestamp(),
+          last_sender: myId,
+          [`reads.${myId}`]: Date.now(),
+        })
+      } catch {
+        return { error: t('pm.cantSend') }
+      }
+      sendTimes.current.push(now)
+      return { error: null }
+    },
+    [myId, activeThreadId, activeOther, t],
+  )
+
   const totalUnread = useMemo(
     () => threads.reduce((sum, t) => sum + t.unread, 0),
     [threads],
@@ -334,8 +373,9 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
       openThread,
       closeThread,
       sendPrivate,
+      sendPrivateImage,
     }),
-    [threads, totalUnread, activeThreadId, activeOther, activeMessages, drawerOpen, openThreadWith, openThread, closeThread, sendPrivate],
+    [threads, totalUnread, activeThreadId, activeOther, activeMessages, drawerOpen, openThreadWith, openThread, closeThread, sendPrivate, sendPrivateImage],
   )
 
   return <PrivateChatContext.Provider value={value}>{children}</PrivateChatContext.Provider>

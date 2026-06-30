@@ -19,7 +19,7 @@ export function RoomChat({ room, onLeave }: RoomChatProps) {
   const { setCurrentRoom } = usePresence()
   const { openUserProfile, openReport } = useUI()
   const { t } = useI18n()
-  const { messages, loading, sendMessage, sendSystem } = useRoomMessages(room.id)
+  const { messages, loading, sendMessage, sendImage, sendSystem } = useRoomMessages(room.id)
   const joinedRef = useRef<string | null>(null)
 
   // Ingresso / uscita dalla stanza: presence + messaggi di sistema.
@@ -55,7 +55,11 @@ export function RoomChat({ room, onLeave }: RoomChatProps) {
           })
         }
       />
-      <MessageInput onSend={sendMessage} placeholder={t('chat.placeholderRoom', { room: room.name })} />
+      <MessageInput
+        onSend={sendMessage}
+        onSendImage={sendImage}
+        placeholder={t('chat.placeholderRoom', { room: room.name })}
+      />
     </div>
   )
 }

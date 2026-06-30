@@ -18,7 +18,7 @@ interface PrivateChatWindowProps {
 export function PrivateChatWindow({ onBack, headerActions, webcamArea }: PrivateChatWindowProps) {
   const { profile } = useAuth()
   const { openUserProfile, openReport, openBlock } = useUI()
-  const { threads, activeThreadId, activeOther, activeMessages, sendPrivate } = usePrivateChat()
+  const { threads, activeThreadId, activeOther, activeMessages, sendPrivate, sendPrivateImage } = usePrivateChat()
   const { t } = useI18n()
   const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -85,23 +85,43 @@ export function PrivateChatWindow({ onBack, headerActions, webcamArea }: Private
           const isOwn = m.sender_id === profile?.id
           return (
             <div key={m.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-              <div
-                className={`max-w-[80%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm ${
-                  isOwn ? 'rounded-tr-sm bg-brand-600 text-white' : 'rounded-tl-sm bg-ink-800 text-ink-200'
-                }`}
-              >
-                {m.body}
-                <span className="mt-0.5 block text-right text-[10px] opacity-70">
-                  {formatTime(m.created_at)}
-                </span>
-              </div>
+              {m.image_url ? (
+                <div className="max-w-[80%]">
+                  <a href={m.image_url} target="_blank" rel="noreferrer" className="block">
+                    <img
+                      src={m.image_url}
+                      alt=""
+                      loading="lazy"
+                      className="max-h-64 max-w-full rounded-2xl border border-ink-700 object-cover"
+                    />
+                  </a>
+                  <span className="mt-0.5 block text-right text-[10px] text-ink-400">
+                    {formatTime(m.created_at)}
+                  </span>
+                </div>
+              ) : (
+                <div
+                  className={`max-w-[80%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm ${
+                    isOwn ? 'rounded-tr-sm bg-brand-600 text-white' : 'rounded-tl-sm bg-ink-800 text-ink-200'
+                  }`}
+                >
+                  {m.body}
+                  <span className="mt-0.5 block text-right text-[10px] opacity-70">
+                    {formatTime(m.created_at)}
+                  </span>
+                </div>
+              )}
             </div>
           )
         })}
         <div ref={bottomRef} />
       </div>
 
-      <MessageInput onSend={sendPrivate} placeholder={t('pm.placeholder', { user: other.username })} />
+      <MessageInput
+        onSend={sendPrivate}
+        onSendImage={sendPrivateImage}
+        placeholder={t('pm.placeholder', { user: other.username })}
+      />
     </div>
   )
 }
