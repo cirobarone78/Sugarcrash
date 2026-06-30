@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #0f0f17;
+  color: #ede9fe;
+  font-family: 'Trebuchet MS', system-ui, -apple-system, sans-serif;
+  /* gestione safe-area iOS */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Scrollbar discreta in tema scuro */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3b3b4f transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #3b3b4f;
+  border-radius: 999px;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-500;
+  }
+  .btn-ghost {
+    @apply btn bg-ink-800 text-ink-200 hover:bg-ink-700;
+  }
+  .btn-danger {
+    @apply btn bg-accent-red text-white hover:bg-red-500;
+  }
+  .input {
+    @apply w-full rounded-lg border border-ink-700 bg-ink-900 px-3 py-2 text-sm text-ink-200 outline-none placeholder:text-ink-400 focus:border-brand-500;
+  }
+  .card {
+    @apply rounded-xl border border-ink-700 bg-ink-850;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+}
