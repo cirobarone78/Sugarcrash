@@ -1,6 +1,4 @@
 {
-  "//": "Security Rules Realtime Database per RetroCam Chat (presence + signaling WebRTC).",
-  "//deploy": "Console Firebase -> Realtime Database -> Regole, oppure: firebase deploy --only database",
   "rules": {
     "status": {
       ".read": "auth != null",
