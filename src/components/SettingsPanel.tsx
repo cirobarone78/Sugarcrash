@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useBlocks } from '../hooks/useBlocks'
 import { db } from '../lib/firebase'
 import { isSoundEnabled, setSoundEnabled } from '../lib/sounds'
-import { statusColor, statusLabel } from '../lib/utils'
+import { statusColor, statusLabel, validateUsername } from '../lib/utils'
 import type { Profile, UserStatus } from '../lib/types'
 
 interface SettingsPanelProps {
@@ -17,7 +17,7 @@ interface SettingsPanelProps {
 const STATUSES: UserStatus[] = ['online', 'busy', 'invisible']
 
 export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
-  const { profile, setStatus, updateProfile, signOut } = useAuth()
+  const { profile, isGuest, setStatus, updateProfile, signOut } = useAuth()
   const { blockedIds, unblock } = useBlocks()
   const [sound, setSound] = useState(isSoundEnabled())
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? '')
@@ -65,26 +65,40 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   return (
     <Modal open={open} onClose={onClose} title="Impostazioni" maxWidth="max-w-lg">
       <div className="space-y-5">
+        {/* Account ospite → upgrade */}
+        {isGuest && <UpgradeSection />}
+
         {/* Profilo */}
         <section className="space-y-2">
           <div className="flex items-center gap-3">
             <Avatar username={profile.username} avatarUrl={avatarUrl} size={48} />
             <div>
-              <p className="font-bold text-white">{profile.username}</p>
-              <p className="text-xs text-ink-400">Modifica l'avatar incollando un URL immagine.</p>
+              <p className="flex items-center gap-2 font-bold text-white">
+                {profile.username}
+                {isGuest && (
+                  <span className="chip bg-ink-800 text-[10px] text-ink-400">ospite</span>
+                )}
+              </p>
+              <p className="text-xs text-ink-400">
+                {isGuest
+                  ? 'Avatar e nickname riservato disponibili dopo la registrazione.'
+                  : "Modifica l'avatar incollando un URL immagine."}
+              </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <input
-              className="input"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="https://…/avatar.jpg"
-            />
-            <button onClick={saveAvatar} className="btn-ghost shrink-0">
-              {savedMsg ? '✓' : 'Salva'}
-            </button>
-          </div>
+          {!isGuest && (
+            <div className="flex gap-2">
+              <input
+                className="input"
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                placeholder="https://…/avatar.jpg"
+              />
+              <button onClick={saveAvatar} className="btn-ghost shrink-0">
+                {savedMsg ? '✓' : 'Salva'}
+              </button>
+            </div>
+          )}
         </section>
 
         {/* Stato */}
@@ -155,9 +169,97 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
         </section>
 
         <button onClick={() => void signOut()} className="btn-danger w-full">
-          Esci dall'account
+          {isGuest ? 'Esci' : "Esci dall'account"}
         </button>
       </div>
     </Modal>
+  )
+}
+
+/** Sezione di upgrade da ospite a utente registrato. */
+function UpgradeSection() {
+  const { upgradeAccount, updateProfile } = useAuth()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [done, setDone] = useState(false)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    const vErr = validateUsername(username)
+    if (vErr) {
+      setError(vErr)
+      return
+    }
+    setBusy(true)
+    setError(null)
+    const { error: upErr } = await upgradeAccount(email, password)
+    if (upErr) {
+      setBusy(false)
+      setError(upErr)
+      return
+    }
+    // riserva il nickname scelto
+    const { error: nameErr } = await updateProfile({ username: username.trim() })
+    setBusy(false)
+    if (nameErr) {
+      setError(
+        nameErr +
+          ' Account registrato: puoi scegliere un altro nickname qui sopra.',
+      )
+      return
+    }
+    setDone(true)
+  }
+
+  if (done) {
+    return (
+      <section className="rounded-xl border border-accent-green/40 bg-accent-green/10 p-3 text-sm text-green-100">
+        ✅ Account registrato! Ora hai nickname riservato, messaggi privati e webcam.
+      </section>
+    )
+  }
+
+  return (
+    <section className="space-y-2 rounded-xl border border-brand-500/50 bg-brand-900/30 p-3">
+      <h3 className="text-sm font-bold text-white">⭐ Diventa membro</h3>
+      <p className="text-xs text-ink-200">
+        Registrati mantenendo questo account: sblocchi <b>nickname riservato</b>,{' '}
+        <b>messaggi privati</b>, <b>webcam</b> e avatar.
+      </p>
+      <form onSubmit={submit} className="space-y-2">
+        <input
+          type="text"
+          className="input"
+          placeholder="Nickname (3-24 caratteri)"
+          value={username}
+          maxLength={24}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <input
+          type="email"
+          required
+          className="input"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          type="password"
+          required
+          minLength={6}
+          className="input"
+          placeholder="Password (min 6 caratteri)"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        {error && <p className="text-xs text-accent-red">{error}</p>}
+        <button type="submit" disabled={busy} className="btn-primary w-full">
+          {busy ? 'Registrazione…' : 'Registrati e salva il nickname'}
+        </button>
+      </form>
+    </section>
   )
 }

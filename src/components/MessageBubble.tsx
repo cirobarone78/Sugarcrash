@@ -37,6 +37,9 @@ export function MessageBubble({ message, isOwn, onAuthorClick, onReport }: Messa
           >
             {isOwn ? 'Tu' : name}
           </button>
+          {message.author_is_guest && (
+            <span className="chip bg-ink-800 text-[9px] text-ink-400">ospite</span>
+          )}
           <span className="text-[10px] text-ink-400">{formatTime(message.created_at)}</span>
         </div>
         <div

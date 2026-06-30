@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInAnonymously,
 } from 'firebase/auth'
 import { FirebaseError } from 'firebase/app'
 import { auth } from '../lib/firebase'
@@ -28,6 +29,24 @@ export function AuthPage() {
       }
     } catch (err) {
       setError(authErrorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleGuest() {
+    setError(null)
+    setInfo(null)
+    setBusy(true)
+    try {
+      await signInAnonymously(auth)
+    } catch (err) {
+      const code = err instanceof FirebaseError ? err.code : ''
+      setError(
+        code === 'auth/operation-not-allowed'
+          ? "Accesso ospite non abilitato nel progetto Firebase (Authentication → Sign-in method → Anonimo)."
+          : 'Accesso ospite non riuscito. Riprova.',
+      )
     } finally {
       setBusy(false)
     }
@@ -100,6 +119,25 @@ export function AuthPage() {
           <button type="submit" disabled={busy} className="btn-primary w-full">
             {busy ? 'Attendi…' : mode === 'signin' ? 'Accedi' : 'Crea account'}
           </button>
+
+          <div className="flex items-center gap-2 py-1">
+            <span className="h-px flex-1 bg-ink-700" />
+            <span className="text-xs text-ink-400">oppure</span>
+            <span className="h-px flex-1 bg-ink-700" />
+          </div>
+
+          <button
+            type="button"
+            disabled={busy}
+            onClick={handleGuest}
+            className="btn-ghost w-full"
+          >
+            👤 Entra come ospite
+          </button>
+          <p className="text-center text-[11px] text-ink-400">
+            Da ospite puoi leggere e chattare in pubblico. Registrati per nickname
+            riservato, messaggi privati e webcam.
+          </p>
         </form>
 
         <p className="mt-4 text-center text-xs text-ink-400">

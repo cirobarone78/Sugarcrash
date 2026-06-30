@@ -28,6 +28,7 @@ function mapMessage(id: string, roomId: string, data: Record<string, unknown>): 
     created_at: tsToMillis(data.created_at),
     author_username: (data.author_username as string | null) ?? null,
     author_avatar_url: (data.author_avatar_url as string | null) ?? null,
+    author_is_guest: Boolean(data.author_is_guest),
   }
 }
 
@@ -86,6 +87,7 @@ export function useRoomMessages(roomId: string | null) {
           message_type: 'text',
           author_username: profile.username,
           author_avatar_url: profile.avatar_url,
+          author_is_guest: profile.is_guest,
           created_at: serverTimestamp(),
         })
       } catch {

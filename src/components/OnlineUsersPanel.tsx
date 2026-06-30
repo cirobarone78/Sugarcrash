@@ -49,7 +49,12 @@ export function OnlineUsersPanel({ roomSlug }: OnlineUsersPanelProps) {
                   <span className="ml-1 text-xs text-ink-400">(tu)</span>
                 )}
               </span>
-              <span className="text-xs text-ink-400">{statusLabel[u.status]}</span>
+              <span className="flex items-center gap-1 text-xs text-ink-400">
+                {statusLabel[u.status]}
+                {u.is_guest && (
+                  <span className="chip bg-ink-800 text-[9px] text-ink-400">ospite</span>
+                )}
+              </span>
             </span>
           </button>
         ))}

@@ -49,6 +49,7 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
       username: profile.username,
       avatar_url: profile.avatar_url,
       status: profile.status,
+      is_guest: profile.is_guest,
       room: roomRef.current,
       online_at: Date.now(),
     }

@@ -24,7 +24,7 @@ export function UserProfilePopover({
   onReport,
   onBlock,
 }: UserProfilePopoverProps) {
-  const { profile: me } = useAuth()
+  const { profile: me, isGuest: meIsGuest } = useAuth()
   const { openThreadWith } = usePrivateChat()
   const { isBlocked, unblock } = useBlocks()
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -44,6 +44,7 @@ export function UserProfilePopover({
         avatar_url: (d.avatar_url as string | null) ?? null,
         status: (d.status as Profile['status']) ?? 'online',
         is_invisible: Boolean(d.is_invisible),
+        is_guest: Boolean(d.is_guest),
         created_at: tsToMillis(d.created_at),
         updated_at: tsToMillis(d.updated_at),
       })
@@ -51,6 +52,7 @@ export function UserProfilePopover({
   }, [open, userId])
 
   const isSelf = userId === me?.id
+  const pmDisabled = meIsGuest || Boolean(profile?.is_guest)
 
   return (
     <Modal open={open} onClose={onClose} title="Profilo utente">
@@ -68,6 +70,9 @@ export function UserProfilePopover({
                   style={{ background: statusColor[profile.status] }}
                 />
                 {statusLabel[profile.status]}
+                {profile.is_guest && (
+                  <span className="chip bg-ink-800 text-[9px] text-ink-400">ospite</span>
+                )}
               </p>
             </div>
           </div>
@@ -76,15 +81,23 @@ export function UserProfilePopover({
             <p className="text-sm text-ink-400">Questo sei tu 🙂</p>
           ) : (
             <div className="space-y-2">
-              <button
-                className="btn-primary w-full"
-                onClick={() => {
-                  void openThreadWith(profile.id)
-                  onClose()
-                }}
-              >
-                💬 Messaggio privato
-              </button>
+              {pmDisabled ? (
+                <p className="rounded-lg bg-ink-850 px-3 py-2 text-center text-xs text-ink-400">
+                  {meIsGuest
+                    ? '🔒 Registrati per inviare messaggi privati.'
+                    : 'Questo utente è un ospite: i privati sono disponibili solo tra utenti registrati.'}
+                </p>
+              ) : (
+                <button
+                  className="btn-primary w-full"
+                  onClick={() => {
+                    void openThreadWith(profile.id)
+                    onClose()
+                  }}
+                >
+                  💬 Messaggio privato
+                </button>
+              )}
               {isBlocked(profile.id) ? (
                 <button className="btn-ghost w-full" onClick={() => void unblock(profile.id)}>
                   Sblocca utente

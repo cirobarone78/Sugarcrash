@@ -10,6 +10,7 @@ export interface Profile {
   avatar_url: string | null
   status: UserStatus
   is_invisible: boolean
+  is_guest: boolean
   created_at: number
   updated_at: number
 }
@@ -35,6 +36,7 @@ export interface Message {
   // denormalizzati al momento dell'invio (Firestore-friendly)
   author_username?: string | null
   author_avatar_url?: string | null
+  author_is_guest?: boolean
 }
 
 export interface PrivateThread {
@@ -87,6 +89,7 @@ export interface PresenceUser {
   username: string
   avatar_url: string | null
   status: UserStatus
+  is_guest: boolean
   room: string | null
   online_at: number
 }

@@ -16,7 +16,7 @@ type MobileTab = 'rooms' | 'chat' | 'users' | 'private'
 
 export function ChatLayout() {
   const { rooms } = useRooms()
-  const { profile } = useAuth()
+  const { profile, isGuest } = useAuth()
   const { totalUnread, drawerOpen, setDrawerOpen } = usePrivateChat()
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -42,6 +42,15 @@ export function ChatLayout() {
           <span className="font-extrabold text-white">RetroCam Chat</span>
         </div>
         <div className="flex items-center gap-1.5">
+          {isGuest && (
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="rounded-lg bg-brand-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-brand-500"
+              title="Registrati per sbloccare privati e webcam"
+            >
+              ⭐ Registrati
+            </button>
+          )}
           <button
             onClick={() => setDrawerOpen(true)}
             className="relative rounded-lg px-2.5 py-1.5 text-sm text-ink-200 hover:bg-ink-800"

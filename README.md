@@ -16,9 +16,24 @@ progetto **originale**.
 
 ## ✨ Funzionalità
 
+### Accesso: ospiti vs registrati
+RetroCam supporta due livelli d'accesso:
+
+| | 👤 Ospite (anonimo) | ⭐ Registrato |
+|---|---|---|
+| Accesso | 1 clic, nessuna email | email + password |
+| Nickname | provvisorio "Ospite-XXXX", **non riservato** | **scelto, unico e persistente** |
+| Chat pubblica | ✅ (badge "ospite") | ✅ |
+| Messaggi privati | ❌ | ✅ |
+| Webcam | ❌ | ✅ |
+| Avatar | ❌ | ✅ |
+
+Un ospite può **registrarsi mantenendo lo stesso account** (uid, profilo e
+cronologia) tramite *account linking*: da **Impostazioni → ⭐ Diventa membro**.
+
 ### Fase 1 — Chat (MVP)
-- 🔐 Login con **Firebase Auth** (email + password).
-- 🙋 Profilo con **nickname unico** e avatar opzionale.
+- 🔐 Login con **Firebase Auth** (email/password) o **ingresso ospite** (anonimo).
+- 🙋 Profilo con **nickname unico** (riservato per i registrati) e avatar opzionale.
 - 🟢🟠⚫ Stato utente: **online / occupato / invisibile**.
 - 🏠 **Lobby** con stanze pubbliche tematiche (nome, descrizione, topic, n° online).
 - 🗂️ Stanze demo: Generale, Musica, Gaming, Napoli, Over 40, Tecnologia.
@@ -75,10 +90,14 @@ Firestore, Realtime Database, Storage) · WebRTC (`RTCPeerConnection`) ·
 - Node.js 18+ (testato su 20/22)
 - Un progetto **Firebase** gratuito (piano Spark)
 
+> 📘 **Guida dettagliata passo-passo** (con screenshot dei menu e troubleshooting):
+> [`docs/FIREBASE_SETUP.md`](./docs/FIREBASE_SETUP.md). Qui sotto la versione breve.
+
 ### 2. Crea e configura il progetto Firebase
 Nella [console Firebase](https://console.firebase.google.com):
 1. **Crea un progetto** (o usane uno esistente).
-2. **Authentication** → *Get started* → abilita il provider **Email/Password**.
+2. **Authentication** → *Get started* → abilita **Email/Password** **e** **Anonimo**
+   (l'opzione Anonimo serve per l'“Entra come ospite”).
 3. **Firestore Database** → *Create database* (modalità produzione va bene,
    tanto carichiamo regole nostre) e scegli una region.
 4. **Realtime Database** → *Create database* → scegli una region → modalità
@@ -280,6 +299,7 @@ firebase deploy --only hosting
 ├─ tailwind.config.js
 ├─ firebase.json             # config Firebase (hosting + rules)
 ├─ firebase/                 # firestore.rules + database.rules.json
+├─ docs/FIREBASE_SETUP.md     # guida passo-passo a Firebase
 ├─ netlify.toml / vercel.json
 ├─ scripts/generate-icons.mjs  # genera le icone PWA (no dipendenze)
 ├─ signaling/                # signaling server WebSocket alternativo (opzionale)

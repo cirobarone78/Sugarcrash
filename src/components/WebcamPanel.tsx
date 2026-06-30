@@ -15,7 +15,11 @@ interface WebcamLaunchButtonProps {
 /** Pulsante "Apri webcam" + modale di consenso (va nell'header della chat). */
 export function WebcamLaunchButton({ otherId, otherName }: WebcamLaunchButtonProps) {
   const { supported, outgoing, hasConsent, giveConsent, startBroadcast } = useWebcam()
+  const { isGuest } = useAuth()
   const [open, setOpen] = useState(false)
+
+  // La webcam è una funzione riservata agli utenti registrati.
+  if (isGuest) return null
 
   if (!supported) {
     return (

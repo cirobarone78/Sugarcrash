@@ -11,6 +11,8 @@ import {
 import {
   onAuthStateChanged,
   signOut as firebaseSignOut,
+  EmailAuthProvider,
+  linkWithCredential,
   type User,
 } from 'firebase/auth'
 import {
@@ -28,10 +30,17 @@ interface AuthContextValue {
   user: User | null
   profile: Profile | null
   loading: boolean
+  /** true se l'utente è un ospite (Firebase Anonymous Auth) */
+  isGuest: boolean
   needsProfileSetup: boolean
   refreshProfile: () => Promise<void>
   updateProfile: (patch: Partial<Profile>) => Promise<{ error: string | null }>
   setStatus: (status: UserStatus) => Promise<void>
+  /** Converte un account ospite in registrato mantenendo uid/profilo/cronologia. */
+  upgradeAccount: (
+    email: string,
+    password: string,
+  ) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
 }
 
@@ -47,6 +56,7 @@ function mapProfile(id: string, data: Record<string, unknown>): Profile {
     avatar_url: (data.avatar_url as string | null) ?? null,
     status: (data.status as UserStatus) ?? 'online',
     is_invisible: Boolean(data.is_invisible),
+    is_guest: Boolean(data.is_guest),
     created_at: tsToMillis(data.created_at),
     updated_at: tsToMillis(data.updated_at),
   }
@@ -58,19 +68,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const profileUnsub = useRef<(() => void) | null>(null)
 
-  // Garantisce l'esistenza del doc profilo (username provvisorio al 1° accesso).
+  // Garantisce l'esistenza del doc profilo al 1° accesso.
+  // - Ospiti (anonimi): nickname "Ospite-XXXX" non riservato, is_guest=true.
+  // - Registrati: username provvisorio "user_..." → forza la scelta del nickname.
   const ensureProfile = useCallback(async (u: User) => {
     const ref = doc(db, 'profiles', u.uid)
-    const provisional = 'user_' + u.uid.replace(/[^a-z0-9]/gi, '').slice(0, 10).toLowerCase()
+    const hex = u.uid.replace(/[^a-z0-9]/gi, '')
+    const guestName = 'Ospite-' + (parseInt(hex.slice(0, 6), 36) % 10000).toString().padStart(4, '0')
+    const provisional = 'user_' + hex.slice(0, 10).toLowerCase()
     await runTransaction(db, async (tx) => {
       const snap = await tx.get(ref)
       if (!snap.exists()) {
         tx.set(ref, {
-          username: provisional,
-          username_lower: provisional,
+          username: u.isAnonymous ? guestName : provisional,
+          username_lower: u.isAnonymous ? guestName.toLowerCase() : provisional,
           avatar_url: null,
           status: 'online',
           is_invisible: false,
+          is_guest: u.isAnonymous,
           created_at: serverTimestamp(),
           updated_at: serverTimestamp(),
         })
@@ -171,13 +186,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [updateProfile],
   )
 
+  // Upgrade ospite → registrato: collega email/password allo stesso account.
+  // Mantiene uid, profilo e cronologia; lo username resta da scegliere dopo.
+  const upgradeAccount = useCallback(
+    async (email: string, password: string): Promise<{ error: string | null }> => {
+      if (!user) return { error: 'Non autenticato.' }
+      try {
+        const credential = EmailAuthProvider.credential(email, password)
+        await linkWithCredential(user, credential)
+        await updateDoc(doc(db, 'profiles', user.uid), {
+          is_guest: false,
+          updated_at: serverTimestamp(),
+        })
+        return { error: null }
+      } catch (err) {
+        const code = (err as { code?: string }).code ?? ''
+        if (code === 'auth/email-already-in-use')
+          return { error: 'Esiste già un account con questa email.' }
+        if (code === 'auth/invalid-email') return { error: 'Email non valida.' }
+        if (code === 'auth/weak-password')
+          return { error: 'Password troppo debole (almeno 6 caratteri).' }
+        return { error: 'Registrazione non riuscita. Riprova.' }
+      }
+    },
+    [user],
+  )
+
   const signOut = useCallback(async () => {
     await firebaseSignOut(auth)
     setProfile(null)
   }, [])
 
+  const isGuest = Boolean(user?.isAnonymous)
+
   const needsProfileSetup = useMemo(() => {
     if (!profile) return false
+    // Gli ospiti entrano subito (nickname auto); solo i registrati devono scegliere.
+    if (profile.is_guest) return false
     return PROVISIONAL_RE.test(profile.username)
   }, [profile])
 
@@ -186,13 +231,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       profile,
       loading,
+      isGuest,
       needsProfileSetup,
       refreshProfile,
       updateProfile,
       setStatus,
+      upgradeAccount,
       signOut,
     }),
-    [user, profile, loading, needsProfileSetup, refreshProfile, updateProfile, setStatus, signOut],
+    [user, profile, loading, isGuest, needsProfileSetup, refreshProfile, updateProfile, setStatus, upgradeAccount, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
