@@ -101,32 +101,6 @@ export function useRoomMessages(roomId: string | null) {
     [roomId, profile, t],
   )
 
-  const sendImage = useCallback(
-    async (url: string): Promise<{ error: string | null }> => {
-      if (!roomId || !profile) return { error: t('common.error') }
-      const now = Date.now()
-      sendTimes.current = sendTimes.current.filter((ts) => now - ts < RATE_WINDOW_MS)
-      if (sendTimes.current.length >= RATE_LIMIT) return { error: t('chat.tooFast') }
-      try {
-        await addDoc(collection(db, 'rooms', roomId, 'messages'), {
-          user_id: profile.id,
-          body: '',
-          message_type: 'image',
-          image_url: url,
-          author_username: profile.username,
-          author_avatar_url: profile.avatar_url,
-          author_is_guest: profile.is_guest,
-          created_at: serverTimestamp(),
-        })
-      } catch {
-        return { error: t('chat.sendFailed') }
-      }
-      sendTimes.current.push(now)
-      return { error: null }
-    },
-    [roomId, profile, t],
-  )
-
   const sendSystem = useCallback(
     async (body: string) => {
       if (!roomId || !profile) return
@@ -142,5 +116,5 @@ export function useRoomMessages(roomId: string | null) {
     [roomId, profile],
   )
 
-  return { messages, loading, sendMessage, sendImage, sendSystem }
+  return { messages, loading, sendMessage, sendSystem }
 }
