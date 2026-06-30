@@ -17,15 +17,15 @@ progetto **originale**.
 ## ✨ Funzionalità
 
 ### Fase 1 — Chat (MVP)
-- 🔐 Login con **Supabase Auth** (email + password).
+- 🔐 Login con **Firebase Auth** (email + password).
 - 🙋 Profilo con **nickname unico** e avatar opzionale.
 - 🟢🟠⚫ Stato utente: **online / occupato / invisibile**.
 - 🏠 **Lobby** con stanze pubbliche tematiche (nome, descrizione, topic, n° online).
 - 🗂️ Stanze demo: Generale, Musica, Gaming, Napoli, Over 40, Tecnologia.
 - 💬 **Chat pubblica realtime** con messaggi di sistema (entra/esce).
-- 👥 **Lista utenti online** aggiornata via Supabase Presence.
+- 👥 **Lista utenti online** via Realtime Database Presence (`onDisconnect`).
 - 🪪 Click sull'utente → scheda profilo → **messaggio privato**.
-- 📨 **Chat privata 1:1** realtime con stato di lettura.
+- 📨 **Chat privata 1:1** realtime con indicatore non letti.
 - 😊 **Emoticon** base.
 - 🚫 **Blocco** utente · ⚠️ **segnalazione** utente/messaggio.
 - 🔔 **Suono** opzionale per i nuovi messaggi.
@@ -42,7 +42,7 @@ progetto **originale**.
 - 🎛️ Controlli: mute microfono, on/off video, **chiudi** (rosso).
 - ⏱️ **Timer** di sessione · indicatore **● LIVE**.
 - 🧾 **Consenso obbligatorio** (avviso privacy + checkbox "Ho capito"), salvato
-  nel client e come `moderation_event` nel DB.
+  nel client e come `moderation_events` su Firestore.
 - 💧 **Watermark dinamico** sul video remoto (nickname ricevente, data/ora, ID
   sessione breve) + avviso "Registrazione e diffusione non autorizzata sono
   vietate".
@@ -54,8 +54,18 @@ progetto **originale**.
 
 ## 🧱 Stack
 
-React + Vite + TypeScript · Tailwind CSS · Supabase (Auth, PostgreSQL, Realtime,
-Presence, Storage) · WebRTC (`RTCPeerConnection`) · `vite-plugin-pwa`.
+React + Vite + TypeScript · Tailwind CSS · **Firebase** (Authentication,
+Firestore, Realtime Database, Storage) · WebRTC (`RTCPeerConnection`) ·
+`vite-plugin-pwa`.
+
+**Come usiamo Firebase**
+- **Auth** → login email/password.
+- **Firestore** → profili, messaggi delle stanze, thread e messaggi privati,
+  sessioni webcam, blocchi, segnalazioni, eventi di moderazione.
+- **Realtime Database** → **presence** (utenti online con `onDisconnect`) e
+  **signaling WebRTC** (nodo effimero `signals/<sessionId>`, nulla viene salvato).
+- **Security Rules** (Firestore + RTDB) al posto della RLS.
+- Le **stanze** sono configurazione statica (`src/lib/rooms.ts`): nessun seeding.
 
 ---
 
@@ -63,33 +73,48 @@ Presence, Storage) · WebRTC (`RTCPeerConnection`) · `vite-plugin-pwa`.
 
 ### 1. Prerequisiti
 - Node.js 18+ (testato su 20/22)
-- Un progetto **Supabase** gratuito
+- Un progetto **Firebase** gratuito (piano Spark)
 
-### 2. Crea il database
-Nel pannello Supabase → **SQL Editor** → incolla ed esegui l'intero file
-[`supabase/schema.sql`](./supabase/schema.sql). Crea tabelle, indici, trigger,
-**RLS + policy**, abilita il Realtime sulle tabelle giuste e inserisce le stanze
-demo.
+### 2. Crea e configura il progetto Firebase
+Nella [console Firebase](https://console.firebase.google.com):
+1. **Crea un progetto** (o usane uno esistente).
+2. **Authentication** → *Get started* → abilita il provider **Email/Password**.
+3. **Firestore Database** → *Create database* (modalità produzione va bene,
+   tanto carichiamo regole nostre) e scegli una region.
+4. **Realtime Database** → *Create database* → scegli una region → modalità
+   bloccata. Copia l'**URL** (serve per `VITE_FIREBASE_DATABASE_URL`).
+5. **Project settings → Le tue app → App Web (</>)**: registra un'app web e
+   copia l'oggetto di configurazione (apiKey, authDomain, projectId, ecc.).
+6. **(Opzionale) Storage** se vuoi caricare avatar lato Storage.
 
-> Suggerimento: in **Authentication → Providers** abilita *Email*. Per provare
-> più velocemente in locale puoi disattivare *Confirm email* (Authentication →
-> Settings) così l'accesso è immediato dopo la registrazione.
+### 3. Carica le Security Rules
+- **Firestore** → *Regole*: incolla il contenuto di
+  [`firebase/firestore.rules`](./firebase/firestore.rules) e pubblica.
+- **Realtime Database** → *Regole*: incolla
+  [`firebase/database.rules.json`](./firebase/database.rules.json) e pubblica.
 
-### 3. Variabili d'ambiente
+> Con la **Firebase CLI**: `npm i -g firebase-tools && firebase login && firebase deploy --only firestore:rules,database` (il repo include `firebase.json`).
+
+### 4. Variabili d'ambiente
 ```bash
 cp .env.example .env
 ```
-Compila con i valori del tuo progetto (Project Settings → API):
+Compila con la config della tua app web (sono valori **pubblici**: la sicurezza
+è nelle Security Rules):
 ```env
-VITE_SUPABASE_URL=https://xxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=la-tua-anon-key
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=il-tuo-progetto.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=il-tuo-progetto
+VITE_FIREBASE_STORAGE_BUCKET=il-tuo-progetto.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=000000000000
+VITE_FIREBASE_APP_ID=1:000000000000:web:xxxx
+VITE_FIREBASE_DATABASE_URL=https://il-tuo-progetto-default-rtdb.firebasedatabase.app
 # opzionale (Fase 2): ICE server
 VITE_ICE_SERVERS=[{"urls":"stun:stun.l.google.com:19302"}]
 ```
-> Usa **solo** `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`. Non inserire mai
-> la *service_role key* o altri segreti nel frontend.
+> Non inserire MAI service account o chiavi private nel frontend.
 
-### 4. Installa e avvia
+### 5. Installa e avvia
 ```bash
 npm install
 npm run dev
@@ -108,17 +133,14 @@ npm run icons      # rigenera le icone PWA in /public
 
 ## 🔌 WebRTC: signaling, STUN e TURN
 
-Il **signaling** (scambio di offerte/risposte SDP e candidati ICE) usa di
-default **Supabase Realtime** con un canale *broadcast* dedicato per ogni
-sessione (`webrtc:<sessionId>`). È la scelta più semplice e privacy-friendly:
-i segnali **non vengono mai salvati** sul database, viaggiano solo in tempo
-reale e svaniscono.
+Il **signaling** (scambio di offerte/risposte SDP e candidati ICE) usa il
+**Realtime Database** di Firebase, sotto il nodo effimero `signals/<sessionId>`:
+i messaggi vengono aggiunti con `push()`, letti con `onChildAdded` e il nodo è
+**rimosso alla chiusura** (anche via `onDisconnect`). I segnali **non vengono
+mai conservati**.
 
-- La tabella `webrtc_signals` esiste nello schema come **fallback persistente
-  documentato**, ma di default non viene usata. Se la usi, ricordati di
-  ripulire periodicamente i segnali vecchi (sono effimeri).
 - In `signaling/` trovi un **piccolo signaling server WebSocket Node.js**
-  alternativo (relay puro in memoria) per reti dove il websocket di Supabase non
+  alternativo (relay puro in memoria) per reti dove il websocket di Firebase non
   è raggiungibile. È opzionale e non necessario nella configurazione standard.
 
 ### STUN / TURN
@@ -131,53 +153,65 @@ reale e svaniscono.
   VITE_ICE_SERVERS=[{"urls":"stun:stun.l.google.com:19302"},{"urls":"turn:turn.tuo-dominio.com:3478","username":"utente","credential":"password"}]
   ```
   Puoi self-hostare [coturn](https://github.com/coturn/coturn) o usare un
-  servizio TURN gestito. Le credenziali TURN sono pensate per stare lato client,
-  ma usa credenziali a tempo/effimere quando possibile.
+  servizio TURN gestito. Usa credenziali a tempo/effimere quando possibile.
 
 ---
 
 ## 🔐 Sicurezza & Privacy (sintesi tecnica)
 
-- **Row Level Security** attiva su tutte le tabelle (vedi `schema.sql`):
-  - le stanze leggibili sono **solo quelle pubbliche**;
-  - si può scrivere **solo con il proprio `user_id`**;
-  - i **messaggi privati** sono leggibili **solo dai due partecipanti**;
-  - i **segnali WebRTC** sono leggibili **solo da mittente e destinatario**;
+- **Security Rules** su Firestore e RTDB (vedi cartella `firebase/`):
+  - le stanze sono di sola lettura per gli autenticati;
+  - si può scrivere **solo con il proprio `user_id` / `sender_id`**;
+  - i **messaggi privati** e le **sessioni webcam** sono accessibili **solo ai
+    due partecipanti** (controllo su `participants`);
   - un utente **bloccato non può** inviare privati né inviti webcam al blocker
-    (enforced lato DB con policy + funzioni `is_blocked_by` / `is_session_party`).
+    (le rules verificano l'assenza del doc in `blocks/<altro>/list/<me>`);
+  - **nickname univoco** garantito da una transazione su `usernames/{nickname}`.
 - **Sanitizzazione** input + **limite lunghezza** messaggi (2000) lato client e
-  con `CHECK` lato DB; React fa di suo l'escape del testo (no XSS dal rendering).
+  nelle rules; React fa di suo l'escape del testo (no XSS dal rendering).
 - **Anti-spam**: rate limit (msg/intervallo), blocco duplicati consecutivi,
   **cooldown** sugli inviti webcam.
-- **Nessun segreto nel frontend**: solo chiavi pubbliche `VITE_*`.
+- **Nessun segreto nel frontend**: la config Firebase è pubblica per design.
 - **Webcam**: streaming P2P, nessuna registrazione/salvataggio. La UI dice
   sempre *"non registrata dalla piattaforma"* e **mai** "impossibile da
   registrare", "anti-recording garantito" o "sicura al 100%".
+
+> Nota sul signaling RTDB: le regole consentono lettura/scrittura del nodo
+> `signals` agli utenti autenticati. Gli id di sessione sono casuali e i dati
+> effimeri; per un ambiente di produzione ad alta sensibilità si possono
+> irrigidire le regole salvando i due uid partecipanti accanto al nodo.
 
 ---
 
 ## 🌐 Deploy
 
-La PWA è un sito statico (cartella `dist/`). Imposta le variabili d'ambiente
-`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (ed eventuale `VITE_ICE_SERVERS`)
-nel pannello del provider. Aggiungi l'URL di produzione tra i **Redirect URLs**
-in Supabase → Authentication → URL Configuration.
+La PWA è un sito statico (cartella `dist/`). Imposta le variabili `VITE_FIREBASE_*`
+(ed eventuale `VITE_ICE_SERVERS`) nel pannello del provider. Aggiungi il dominio
+di produzione tra i **domini autorizzati** in Firebase → Authentication →
+Settings → *Authorized domains*.
+
+### Firebase Hosting (consigliato con Firebase)
+```bash
+npm run build
+firebase deploy --only hosting
+```
+(`firebase.json` è già configurato con publish `dist` e rewrite SPA.)
 
 ### Netlify
 1. *Add new site → Import from Git*, seleziona il repo.
 2. Build command: `npm run build` · Publish directory: `dist`
-   (già impostati in [`netlify.toml`](./netlify.toml), incluso il redirect SPA).
-3. *Site settings → Environment variables*: aggiungi le `VITE_*`.
-4. Deploy. (CLI alternativa: `npm i -g netlify-cli && netlify deploy --prod`.)
+   (già in [`netlify.toml`](./netlify.toml), incluso il redirect SPA).
+3. *Site settings → Environment variables*: aggiungi le `VITE_FIREBASE_*`.
+4. Deploy.
 
 ### Vercel
 1. *Add New → Project*, importa il repo.
 2. Framework preset: **Vite** · Build: `npm run build` · Output: `dist`
    (vedi [`vercel.json`](./vercel.json), include rewrite SPA).
-3. *Settings → Environment Variables*: aggiungi le `VITE_*`.
-4. Deploy. (CLI alternativa: `npm i -g vercel && vercel --prod`.)
+3. *Settings → Environment Variables*: aggiungi le `VITE_FIREBASE_*`.
+4. Deploy.
 
-> Entrambe servono il sito su **HTTPS**: requisito necessario sia per la PWA sia
+> Tutte servono il sito su **HTTPS**: requisito necessario sia per la PWA sia
 > per `getUserMedia` (webcam).
 
 ---
@@ -222,14 +256,14 @@ in Supabase → Authentication → URL Configuration.
 
 ## 🗺️ Roadmap futura
 - 🔒 Stanze private (con invito/password).
-- 🛠️ Ruoli **admin/moderatore** e dashboard moderazione (le `reports` e
-  `moderation_events` sono già pronte lato DB).
+- 🛠️ Ruoli **admin/moderatore** e dashboard moderazione (`reports` e
+  `moderation_events` sono già pronte su Firestore).
 - ⏳ Ban temporanei.
 - 🧹 Filtri parole / profanity filter.
 - ⭐ Sistema di reputazione.
 - 👫 Amici / preferiti.
-- 🔔 Notifiche push (Web Push).
-- 🖼️ Invio immagini (Supabase Storage già nello stack).
+- 🔔 Notifiche push (Firebase Cloud Messaging).
+- 🖼️ Invio immagini (Firebase Storage già nello stack).
 - 🎤 Voice memo.
 - 🎨 Temi grafici / skin.
 - 🎮 Mini giochi da chat.
@@ -244,16 +278,17 @@ in Supabase → Authentication → URL Configuration.
 ├─ index.html
 ├─ vite.config.ts            # Vite + plugin PWA (manifest, service worker)
 ├─ tailwind.config.js
+├─ firebase.json             # config Firebase (hosting + rules)
+├─ firebase/                 # firestore.rules + database.rules.json
 ├─ netlify.toml / vercel.json
 ├─ scripts/generate-icons.mjs  # genera le icone PWA (no dipendenze)
-├─ supabase/schema.sql       # tabelle, indici, trigger, RLS, demo data
 ├─ signaling/                # signaling server WebSocket alternativo (opzionale)
 └─ src/
    ├─ App.tsx                # provider + gating auth/profilo
-   ├─ lib/                   # supabase, types, utils, sanitize, sounds, emoji, webrtc
+   ├─ lib/                   # firebase, types, rooms, utils, sanitize, sounds, emoji, webrtc
    ├─ context/               # Auth, Presence, PrivateChat, UI, Webcam
-   ├─ hooks/                 # useRooms, useRoomMessages, useBlocks
-   └─ components/            # tutti i componenti UI (vedi sotto)
+   ├─ hooks/                 # useRooms (statico), useRoomMessages, useBlocks
+   └─ components/            # tutti i componenti UI
 ```
 
 Componenti principali: `AuthPage`, `ProfileSetup`, `LobbyPage`, `RoomList`,

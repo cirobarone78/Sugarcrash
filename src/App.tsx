@@ -8,7 +8,7 @@ import { AuthPage } from './components/AuthPage'
 import { ProfileSetup } from './components/ProfileSetup'
 import { ChatLayout } from './components/ChatLayout'
 import { WebcamInviteBanner } from './components/WebcamInviteBanner'
-import { isSupabaseConfigured } from './lib/supabase'
+import { isFirebaseConfigured } from './lib/firebase'
 
 function ConfigNotice() {
   return (
@@ -16,13 +16,15 @@ function ConfigNotice() {
       <div className="card max-w-lg space-y-3 p-6">
         <h1 className="text-xl font-bold text-white">⚙️ Configurazione necessaria</h1>
         <p className="text-sm text-ink-200">
-          Le variabili d'ambiente di Supabase non sono impostate. Crea un file{' '}
+          La configurazione Firebase non è impostata. Crea un file{' '}
           <code className="rounded bg-ink-800 px-1">.env</code> partendo da{' '}
           <code className="rounded bg-ink-800 px-1">.env.example</code> e inserisci:
         </p>
         <pre className="overflow-x-auto rounded-lg bg-ink-950 p-3 text-xs text-brand-200">
-{`VITE_SUPABASE_URL=https://xxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=la-tua-anon-key`}
+{`VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_DATABASE_URL=...`}
         </pre>
         <p className="text-sm text-ink-400">
           Poi riavvia il dev server. Le istruzioni complete sono nel README.
@@ -58,15 +60,15 @@ function AuthedApp() {
 }
 
 function Gate() {
-  const { session, loading, needsProfileSetup } = useAuth()
+  const { user, loading, needsProfileSetup } = useAuth()
   if (loading) return <Loading />
-  if (!session) return <AuthPage />
+  if (!user) return <AuthPage />
   if (needsProfileSetup) return <ProfileSetup />
   return <AuthedApp />
 }
 
 export default function App() {
-  if (!isSupabaseConfigured) return <ConfigNotice />
+  if (!isFirebaseConfigured) return <ConfigNotice />
   return (
     <AuthProvider>
       <Gate />

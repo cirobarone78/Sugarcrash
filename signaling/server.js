@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────────
 // Signaling server WebSocket ALTERNATIVO per RetroCam Chat.
 //
-// NB: di default l'app usa Supabase Realtime (broadcast) come signaling, quindi
-// questo server NON è necessario. È fornito come alternativa per reti dove il
-// websocket di Supabase non è raggiungibile o per chi preferisce un signaling
-// proprio.
+// NB: di default l'app usa il Realtime Database di Firebase come signaling,
+// quindi questo server NON è necessario. È fornito come alternativa per reti
+// dove il websocket di Firebase non è raggiungibile o per chi preferisce un
+// signaling proprio.
 //
 // Semantica: i client si uniscono a una "room" = id sessione webcam e i
 // messaggi (ready/offer/answer/ice/bye) vengono inoltrati agli altri membri
@@ -14,9 +14,9 @@
 //   cd signaling && npm install && npm start
 //   (porta default 8787, override con PORT)
 //
-// Per integrarlo nel client al posto di Supabase, sostituire SignalingChannel
-// in src/lib/webrtc.ts con un wrapper attorno a questo WebSocket (stesso
-// formato di messaggi { kind, ... , from }).
+// Per integrarlo nel client al posto del Realtime Database, sostituire
+// SignalingChannel in src/lib/webrtc.ts con un wrapper attorno a questo
+// WebSocket (stesso formato di messaggi { kind, ... , from }).
 // ─────────────────────────────────────────────────────────────────────────
 import { WebSocketServer } from 'ws'
 import { randomUUID } from 'node:crypto'

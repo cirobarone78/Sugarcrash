@@ -8,13 +8,26 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { supabase } from '../lib/supabase'
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  where,
+} from 'firebase/firestore'
+import { db } from '../lib/firebase'
 import { useAuth } from './AuthContext'
 import { usePrivateChat } from './PrivateChatContext'
 import { useBlocks } from '../hooks/useBlocks'
 import { WebcamPeer, isWebRTCSupported } from '../lib/webrtc'
 import { playInviteSound } from '../lib/sounds'
-import type { WebcamSession } from '../lib/types'
+import { orderedPair, tsToMillis } from '../lib/utils'
+import type { WebcamSession, WebcamStatus } from '../lib/types'
 
 const CONSENT_KEY = 'retrocam.webcam.consent'
 const INVITE_COOLDOWN_MS = 15000
@@ -58,6 +71,21 @@ interface WebcamContextValue {
 
 const WebcamContext = createContext<WebcamContextValue | undefined>(undefined)
 
+function mapSession(id: string, d: Record<string, unknown>): WebcamSession {
+  return {
+    id,
+    thread_id: (d.thread_id as string) ?? '',
+    broadcaster_id: (d.broadcaster_id as string) ?? '',
+    viewer_id: (d.viewer_id as string) ?? '',
+    participants: (d.participants as string[]) ?? [],
+    audio_enabled: Boolean(d.audio_enabled),
+    status: (d.status as WebcamStatus) ?? 'pending',
+    created_at: tsToMillis(d.created_at),
+    accepted_at: d.accepted_at ? tsToMillis(d.accepted_at) : null,
+    ended_at: d.ended_at ? tsToMillis(d.ended_at) : null,
+  }
+}
+
 export function WebcamProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth()
   const { openThread, setDrawerOpen } = usePrivateChat()
@@ -75,7 +103,6 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
   const outPeer = useRef<WebcamPeer | null>(null)
   const inPeer = useRef<WebcamPeer | null>(null)
   const lastInviteAt = useRef<number>(0)
-  // refs con gli id correnti, leggibili dentro le subscription realtime
   const outgoingIdRef = useRef<string | null>(null)
   const incomingIdRef = useRef<string | null>(null)
   const pendingRef = useRef<string | null>(null)
@@ -87,15 +114,15 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CONSENT_KEY, 'true')
     setHasConsent(true)
     if (myId) {
-      await supabase.from('moderation_events').insert({
+      await addDoc(collection(db, 'moderation_events'), {
         user_id: myId,
         event_type: 'webcam_consent',
         metadata: { at: new Date().toISOString() },
+        created_at: serverTimestamp(),
       })
     }
   }, [myId])
 
-  // ── Pulizia connessioni ────────────────────────────────────────
   const teardownOutgoing = useCallback(async () => {
     setOutgoing((prev) => {
       prev?.localStream.getTracks().forEach((t) => t.stop())
@@ -116,28 +143,27 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const endOutgoing = useCallback(async () => {
-    const sessionId = outgoing?.session.id
+    const sessionId = outgoingIdRef.current
     await teardownOutgoing()
     if (sessionId) {
-      await supabase
-        .from('webcam_sessions')
-        .update({ status: 'ended', ended_at: new Date().toISOString() })
-        .eq('id', sessionId)
+      await updateDoc(doc(db, 'webcamSessions', sessionId), {
+        status: 'ended',
+        ended_at: serverTimestamp(),
+      }).catch(() => undefined)
     }
-  }, [outgoing?.session.id, teardownOutgoing])
+  }, [teardownOutgoing])
 
   const endIncoming = useCallback(async () => {
-    const sessionId = incoming?.session.id
+    const sessionId = incomingIdRef.current
     await teardownIncoming()
     if (sessionId) {
-      await supabase
-        .from('webcam_sessions')
-        .update({ status: 'ended', ended_at: new Date().toISOString() })
-        .eq('id', sessionId)
+      await updateDoc(doc(db, 'webcamSessions', sessionId), {
+        status: 'ended',
+        ended_at: serverTimestamp(),
+      }).catch(() => undefined)
     }
-  }, [incoming?.session.id, teardownIncoming])
+  }, [teardownIncoming])
 
-  // ── Avvio trasmissione (io = broadcaster) ──────────────────────
   const startBroadcast = useCallback(
     async (viewerId: string, withAudio: boolean) => {
       setError(null)
@@ -160,13 +186,9 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      // 1. permessi media
       let stream: MediaStream
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: withAudio,
-        })
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: withAudio })
       } catch (err) {
         const name = err instanceof DOMException ? err.name : ''
         if (name === 'NotAllowedError' || name === 'SecurityError')
@@ -177,29 +199,56 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      // 2. crea la sessione (RLS blocca se il viewer ti ha bloccato)
-      const { data, error: insErr } = await supabase
-        .from('webcam_sessions')
-        .insert({
-          thread_id: await ensureThreadId(myId, viewerId),
+      // assicura l'esistenza del thread privato
+      const [a, b] = orderedPair(myId, viewerId)
+      const tid = `${a}__${b}`
+      const threadRef = doc(db, 'privateThreads', tid)
+      const threadSnap = await getDoc(threadRef)
+      if (!threadSnap.exists()) {
+        await setDoc(threadRef, {
+          user_a: a,
+          user_b: b,
+          participants: [a, b],
+          created_at: serverTimestamp(),
+          reads: {},
+        }).catch(() => undefined)
+      }
+
+      let sessionId: string
+      try {
+        const ref = await addDoc(collection(db, 'webcamSessions'), {
+          thread_id: tid,
           broadcaster_id: myId,
           viewer_id: viewerId,
+          participants: [myId, viewerId],
           audio_enabled: withAudio,
           status: 'pending',
+          created_at: serverTimestamp(),
+          accepted_at: null,
+          ended_at: null,
         })
-        .select()
-        .single()
-
-      if (insErr || !data) {
+        sessionId = ref.id
+      } catch {
         stream.getTracks().forEach((t) => t.stop())
         setError("Impossibile inviare l'invito (l'utente potrebbe averti bloccato).")
         return
       }
-      const session = data as WebcamSession
       lastInviteAt.current = now
 
-      // 3. peer broadcaster
-      const peer = new WebcamPeer(session.id, myId, 'broadcaster', stream, {
+      const session: WebcamSession = {
+        id: sessionId,
+        thread_id: tid,
+        broadcaster_id: myId,
+        viewer_id: viewerId,
+        participants: [myId, viewerId],
+        audio_enabled: withAudio,
+        status: 'pending',
+        created_at: now,
+        accepted_at: null,
+        ended_at: null,
+      }
+
+      const peer = new WebcamPeer(sessionId, myId, 'broadcaster', stream, {
         onConnectionStateChange: (state) =>
           setOutgoing((prev) => (prev ? { ...prev, connState: state } : prev)),
         onBye: () => void endOutgoing(),
@@ -217,14 +266,13 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
     [supported, myId, isBlocked, outgoing, endOutgoing],
   )
 
-  // ── Accetta invito (io = viewer) ───────────────────────────────
   const acceptInvite = useCallback(async () => {
     if (!pendingInvite || !myId) return
     const session = pendingInvite.session
-    await supabase
-      .from('webcam_sessions')
-      .update({ status: 'accepted', accepted_at: new Date().toISOString() })
-      .eq('id', session.id)
+    await updateDoc(doc(db, 'webcamSessions', session.id), {
+      status: 'accepted',
+      accepted_at: serverTimestamp(),
+    }).catch(() => undefined)
 
     const peer = new WebcamPeer(session.id, myId, 'viewer', null, {
       onRemoteStream: (rs) =>
@@ -236,7 +284,6 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
     inPeer.current = peer
     setIncoming({ session, remoteStream: null, connState: 'new' })
     setPendingInvite(null)
-    // apri la conversazione corrispondente
     openThread(session.thread_id)
     setDrawerOpen(true)
     await peer.connect()
@@ -244,14 +291,12 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
 
   const declineInvite = useCallback(async () => {
     if (!pendingInvite) return
-    await supabase
-      .from('webcam_sessions')
-      .update({ status: 'declined' })
-      .eq('id', pendingInvite.session.id)
+    await updateDoc(doc(db, 'webcamSessions', pendingInvite.session.id), {
+      status: 'declined',
+    }).catch(() => undefined)
     setPendingInvite(null)
   }, [pendingInvite])
 
-  // ── Controlli ──────────────────────────────────────────────────
   const toggleMic = useCallback(() => {
     setOutgoing((prev) => {
       if (!prev) return prev
@@ -270,59 +315,7 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  // ── Realtime sulle sessioni webcam ─────────────────────────────
-  useEffect(() => {
-    if (!myId) return
-    const channel = supabase
-      .channel('webcam-sessions')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'webcam_sessions' },
-        async (payload) => {
-          const s = payload.new as WebcamSession
-          if (s.viewer_id === myId && s.status === 'pending') {
-            const { data } = await supabase
-              .from('profiles')
-              .select('username')
-              .eq('id', s.broadcaster_id)
-              .maybeSingle()
-            setPendingInvite({
-              session: s,
-              fromUsername: (data as { username: string } | null)?.username ?? 'Un utente',
-            })
-            playInviteSound()
-          }
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'webcam_sessions' },
-        (payload) => {
-          const s = payload.new as WebcamSession
-          if (outPeer.current && outgoingIdRef.current === s.id) {
-            if (s.status === 'declined') {
-              setError('Invito webcam rifiutato.')
-              void teardownOutgoing()
-            } else if (s.status === 'ended' || s.status === 'cancelled') {
-              void teardownOutgoing()
-            }
-          }
-          if (inPeer.current && incomingIdRef.current === s.id) {
-            if (s.status === 'ended' || s.status === 'cancelled') {
-              void teardownIncoming()
-            }
-          }
-          if (pendingRef.current && pendingRef.current === s.id && s.status !== 'pending') {
-            setPendingInvite(null)
-          }
-        },
-      )
-      .subscribe()
-    return () => {
-      void supabase.removeChannel(channel)
-    }
-  }, [myId, teardownOutgoing, teardownIncoming])
-
+  // refs sincronizzate per la subscription
   useEffect(() => {
     outgoingIdRef.current = outgoing?.session.id ?? null
   }, [outgoing?.session.id])
@@ -332,6 +325,47 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     pendingRef.current = pendingInvite?.session.id ?? null
   }, [pendingInvite?.session.id])
+
+  // Listener sulle sessioni webcam che mi coinvolgono
+  useEffect(() => {
+    if (!myId) return
+    const q = query(
+      collection(db, 'webcamSessions'),
+      where('participants', 'array-contains', myId),
+    )
+    const unsub = onSnapshot(q, (snap) => {
+      for (const change of snap.docChanges()) {
+        const s = mapSession(change.doc.id, change.doc.data())
+
+        if (change.type === 'added' && s.viewer_id === myId && s.status === 'pending') {
+          if (pendingRef.current === s.id) continue
+          getDoc(doc(db, 'profiles', s.broadcaster_id)).then((p) => {
+            setPendingInvite({
+              session: s,
+              fromUsername: (p.data()?.username as string) ?? 'Un utente',
+            })
+            playInviteSound()
+          })
+        }
+
+        if (outgoingIdRef.current === s.id) {
+          if (s.status === 'declined') {
+            setError('Invito webcam rifiutato.')
+            void teardownOutgoing()
+          } else if (s.status === 'ended' || s.status === 'cancelled') {
+            void teardownOutgoing()
+          }
+        }
+        if (incomingIdRef.current === s.id) {
+          if (s.status === 'ended' || s.status === 'cancelled') void teardownIncoming()
+        }
+        if (pendingRef.current === s.id && s.status !== 'pending') {
+          setPendingInvite(null)
+        }
+      }
+    })
+    return () => unsub()
+  }, [myId, teardownOutgoing, teardownIncoming])
 
   // cleanup al logout
   useEffect(() => {
@@ -368,24 +402,6 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
   )
 
   return <WebcamContext.Provider value={value}>{children}</WebcamContext.Provider>
-}
-
-/** Recupera (o crea) il thread privato tra due utenti, restituendo l'id. */
-async function ensureThreadId(myId: string, otherId: string): Promise<string> {
-  const [a, b] = myId < otherId ? [myId, otherId] : [otherId, myId]
-  const { data: existing } = await supabase
-    .from('private_threads')
-    .select('id')
-    .eq('user_a', a)
-    .eq('user_b', b)
-    .maybeSingle()
-  if (existing) return (existing as { id: string }).id
-  const { data: created } = await supabase
-    .from('private_threads')
-    .insert({ user_a: a, user_b: b })
-    .select('id')
-    .single()
-  return (created as { id: string }).id
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

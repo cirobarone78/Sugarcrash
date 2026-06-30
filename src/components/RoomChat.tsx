@@ -6,7 +6,6 @@ import { useRoomMessages } from '../hooks/useRoomMessages'
 import { useAuth } from '../context/AuthContext'
 import { usePresence } from '../context/PresenceContext'
 import { useUI } from '../context/UIContext'
-import { supabase } from '../lib/supabase'
 import type { Room } from '../lib/types'
 
 interface RoomChatProps {
@@ -21,19 +20,13 @@ export function RoomChat({ room, onLeave }: RoomChatProps) {
   const { messages, loading, sendMessage, sendSystem } = useRoomMessages(room.id)
   const joinedRef = useRef<string | null>(null)
 
-  // Ingresso / uscita dalla stanza: presence + messaggi di sistema + membership.
+  // Ingresso / uscita dalla stanza: presence + messaggi di sistema.
   useEffect(() => {
     if (!profile) return
     if (joinedRef.current === room.id) return
     joinedRef.current = room.id
 
     setCurrentRoom(room.slug)
-    void supabase
-      .from('room_members')
-      .upsert(
-        { room_id: room.id, user_id: profile.id, last_seen: new Date().toISOString() },
-        { onConflict: 'room_id,user_id' },
-      )
     void sendSystem(`${profile.username} è entrato nella stanza`)
 
     const username = profile.username
@@ -56,7 +49,7 @@ export function RoomChat({ room, onLeave }: RoomChatProps) {
           openReport({
             messageId: m.id,
             reportedUserId: m.user_id ?? undefined,
-            label: `messaggio di ${m.author?.username ?? 'utente'}`,
+            label: `messaggio di ${m.author_username ?? 'utente'}`,
           })
         }
       />

@@ -8,20 +8,48 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { supabase } from '../lib/supabase'
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  where,
+} from 'firebase/firestore'
+import { db } from '../lib/firebase'
 import { useAuth } from './AuthContext'
-import { sanitizeMessage, orderedPair } from '../lib/utils'
+import { sanitizeMessage, orderedPair, tsToMillis } from '../lib/utils'
 import { playMessageSound } from '../lib/sounds'
-import type { PrivateMessage, PrivateThread, Profile } from '../lib/types'
+import type { PrivateMessage, UserStatus } from '../lib/types'
 
-type AuthorLite = Pick<Profile, 'id' | 'username' | 'avatar_url' | 'status'>
+interface OtherLite {
+  id: string
+  username: string
+  avatar_url: string | null
+  status: UserStatus
+}
 
 export interface ThreadView {
-  thread: PrivateThread
-  other: AuthorLite
+  thread: { id: string; user_a: string; user_b: string }
+  other: OtherLite
   lastBody: string | null
-  lastAt: string | null
+  lastAt: number | null
   unread: number
+}
+
+interface ThreadDoc {
+  user_a: string
+  user_b: string
+  participants: string[]
+  last_body?: string | null
+  last_at?: unknown
+  last_sender?: string | null
+  reads?: Record<string, number>
 }
 
 interface PrivateChatContextValue {
@@ -39,177 +67,161 @@ interface PrivateChatContextValue {
 
 const PrivateChatContext = createContext<PrivateChatContextValue | undefined>(undefined)
 
-// anti-spam privati
 const RATE_LIMIT = 6
 const RATE_WINDOW_MS = 7000
+
+function threadId(a: string, b: string): string {
+  const [x, y] = orderedPair(a, b)
+  return `${x}__${y}`
+}
 
 export function PrivateChatProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth()
   const [threads, setThreads] = useState<ThreadView[]>([])
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null)
-  const [messagesByThread, setMessagesByThread] = useState<Record<string, PrivateMessage[]>>({})
+  const [activeMessages, setActiveMessages] = useState<PrivateMessage[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const activeRef = useRef<string | null>(null)
+  const drawerRef = useRef(false)
   const sendTimes = useRef<number[]>([])
-  const lastBody = useRef<string>('')
+  const lastBodyRef = useRef<string>('')
+  const profileCache = useRef<Map<string, OtherLite>>(new Map())
+  const lastSeenAt = useRef<Map<string, number>>(new Map())
 
   const myId = profile?.id ?? null
 
-  const loadThreads = useCallback(async () => {
-    if (!myId) {
-      setThreads([])
-      return
-    }
-    const { data } = await supabase
-      .from('private_threads')
-      .select('*')
-      .or(`user_a.eq.${myId},user_b.eq.${myId}`)
-    const rows = (data as PrivateThread[]) ?? []
-    if (rows.length === 0) {
-      setThreads([])
-      return
-    }
-    const otherIds = rows.map((t) => (t.user_a === myId ? t.user_b : t.user_a))
-    const { data: profs } = await supabase
-      .from('profiles')
-      .select('id, username, avatar_url, status')
-      .in('id', otherIds)
-    const profMap = new Map<string, AuthorLite>(
-      ((profs as AuthorLite[]) ?? []).map((p) => [p.id, p]),
-    )
-    // ultimo messaggio + unread per ogni thread
-    const views: ThreadView[] = []
-    for (const t of rows) {
-      const otherId = t.user_a === myId ? t.user_b : t.user_a
-      const { data: lastArr } = await supabase
-        .from('private_messages')
-        .select('*')
-        .eq('thread_id', t.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-      const last = (lastArr as PrivateMessage[])?.[0] ?? null
-      const { count } = await supabase
-        .from('private_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('thread_id', t.id)
-        .is('read_at', null)
-        .neq('sender_id', myId)
-      views.push({
-        thread: t,
-        other: profMap.get(otherId) ?? {
-          id: otherId,
-          username: 'utente',
-          avatar_url: null,
-          status: 'online',
-        },
-        lastBody: last?.body ?? null,
-        lastAt: last?.created_at ?? null,
-        unread: count ?? 0,
-      })
-    }
-    views.sort((a, b) => (b.lastAt ?? '').localeCompare(a.lastAt ?? ''))
-    setThreads(views)
-  }, [myId])
-
   useEffect(() => {
-    void loadThreads()
-  }, [loadThreads])
+    drawerRef.current = drawerOpen
+  }, [drawerOpen])
 
-  const loadMessages = useCallback(async (threadId: string) => {
-    const { data } = await supabase
-      .from('private_messages')
-      .select('*')
-      .eq('thread_id', threadId)
-      .order('created_at', { ascending: true })
-      .limit(200)
-    setMessagesByThread((prev) => ({ ...prev, [threadId]: (data as PrivateMessage[]) ?? [] }))
+  const fetchOther = useCallback(async (id: string): Promise<OtherLite> => {
+    const cached = profileCache.current.get(id)
+    if (cached) return cached
+    const snap = await getDoc(doc(db, 'profiles', id))
+    const d = snap.data()
+    const lite: OtherLite = {
+      id,
+      username: (d?.username as string) ?? 'utente',
+      avatar_url: (d?.avatar_url as string | null) ?? null,
+      status: (d?.status as UserStatus) ?? 'online',
+    }
+    profileCache.current.set(id, lite)
+    return lite
   }, [])
 
   const markRead = useCallback(
-    async (threadId: string) => {
+    async (tid: string) => {
       if (!myId) return
-      await supabase
-        .from('private_messages')
-        .update({ read_at: new Date().toISOString() })
-        .eq('thread_id', threadId)
-        .neq('sender_id', myId)
-        .is('read_at', null)
-      setThreads((prev) =>
-        prev.map((t) => (t.thread.id === threadId ? { ...t, unread: 0 } : t)),
-      )
+      try {
+        await updateDoc(doc(db, 'privateThreads', tid), { [`reads.${myId}`]: Date.now() })
+      } catch {
+        /* il thread potrebbe non esistere ancora */
+      }
     },
     [myId],
   )
 
-  // Realtime su tutti i messaggi privati (RLS limita a quelli che posso vedere).
+  // Listener sui thread dell'utente
   useEffect(() => {
-    if (!myId) return
-    const channel = supabase
-      .channel('private-messages')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'private_messages' },
-        (payload) => {
-          const row = payload.new as PrivateMessage
-          setMessagesByThread((prev) => {
-            const list = prev[row.thread_id]
-            if (!list) return prev
-            if (list.some((m) => m.id === row.id)) return prev
-            return { ...prev, [row.thread_id]: [...list, row] }
-          })
-          const fromOther = row.sender_id !== myId
-          if (fromOther) {
-            if (activeRef.current === row.thread_id && drawerOpen) {
-              void markRead(row.thread_id)
-            } else {
-              playMessageSound()
-            }
-          }
-          // aggiorna anteprima/threads (e crea il thread se è nuovo)
-          void loadThreads()
-        },
-      )
-      .subscribe()
-    return () => {
-      void supabase.removeChannel(channel)
+    if (!myId) {
+      setThreads([])
+      return
     }
-  }, [myId, drawerOpen, loadThreads, markRead])
+    const q = query(
+      collection(db, 'privateThreads'),
+      where('participants', 'array-contains', myId),
+    )
+    const unsub = onSnapshot(q, async (snap) => {
+      const views: ThreadView[] = []
+      for (const docSnap of snap.docs) {
+        const t = docSnap.data() as ThreadDoc
+        const otherId = t.user_a === myId ? t.user_b : t.user_a
+        const other = await fetchOther(otherId)
+        const lastAt = t.last_at ? tsToMillis(t.last_at) : null
+        const myRead = t.reads?.[myId] ?? 0
+        const unread =
+          t.last_sender && t.last_sender !== myId && lastAt && myRead < lastAt ? 1 : 0
+        views.push({
+          thread: { id: docSnap.id, user_a: t.user_a, user_b: t.user_b },
+          other,
+          lastBody: t.last_body ?? null,
+          lastAt,
+          unread,
+        })
+
+        // suono per nuovi messaggi in arrivo (thread non attivo o drawer chiuso)
+        const prev = lastSeenAt.current.get(docSnap.id) ?? 0
+        if (lastAt && lastAt > prev) {
+          lastSeenAt.current.set(docSnap.id, lastAt)
+          const isFromOther = t.last_sender && t.last_sender !== myId
+          const isActiveOpen = activeRef.current === docSnap.id && drawerRef.current
+          if (isFromOther && !isActiveOpen && prev !== 0) playMessageSound()
+        }
+      }
+      views.sort((a, b) => (b.lastAt ?? 0) - (a.lastAt ?? 0))
+      setThreads(views)
+    })
+    return () => unsub()
+  }, [myId, fetchOther])
+
+  // Listener sui messaggi del thread attivo
+  useEffect(() => {
+    if (!activeThreadId) {
+      setActiveMessages([])
+      return
+    }
+    const q = query(
+      collection(db, 'privateThreads', activeThreadId, 'messages'),
+      orderBy('created_at'),
+    )
+    const unsub = onSnapshot(q, (snap) => {
+      setActiveMessages(
+        snap.docs.map((d) => {
+          const data = d.data()
+          return {
+            id: d.id,
+            thread_id: activeThreadId,
+            sender_id: (data.sender_id as string) ?? '',
+            body: (data.body as string) ?? '',
+            created_at: tsToMillis(data.created_at),
+            read_at: data.read_at ? tsToMillis(data.read_at) : null,
+          }
+        }),
+      )
+      if (drawerRef.current) void markRead(activeThreadId)
+    })
+    return () => unsub()
+  }, [activeThreadId, markRead])
 
   const openThread = useCallback(
-    (threadId: string) => {
-      activeRef.current = threadId
-      setActiveThreadId(threadId)
+    (tid: string) => {
+      activeRef.current = tid
+      setActiveThreadId(tid)
       setDrawerOpen(true)
-      void loadMessages(threadId)
-      void markRead(threadId)
+      void markRead(tid)
     },
-    [loadMessages, markRead],
+    [markRead],
   )
 
   const openThreadWith = useCallback(
     async (userId: string) => {
       if (!myId || userId === myId) return
       const [a, b] = orderedPair(myId, userId)
-      const { data: existing } = await supabase
-        .from('private_threads')
-        .select('*')
-        .eq('user_a', a)
-        .eq('user_b', b)
-        .maybeSingle()
-      let thread = existing as PrivateThread | null
-      if (!thread) {
-        const { data: created } = await supabase
-          .from('private_threads')
-          .insert({ user_a: a, user_b: b })
-          .select()
-          .single()
-        thread = created as PrivateThread
+      const tid = threadId(a, b)
+      const ref = doc(db, 'privateThreads', tid)
+      const snap = await getDoc(ref)
+      if (!snap.exists()) {
+        await setDoc(ref, {
+          user_a: a,
+          user_b: b,
+          participants: [a, b],
+          created_at: serverTimestamp(),
+          reads: {},
+        })
       }
-      if (!thread) return
-      await loadThreads()
-      openThread(thread.id)
+      openThread(tid)
     },
-    [myId, loadThreads, openThread],
+    [myId, openThread],
   )
 
   const closeThread = useCallback(() => {
@@ -222,26 +234,32 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
       if (!myId || !activeThreadId) return { error: 'Nessuna conversazione attiva.' }
       const body = sanitizeMessage(raw)
       if (!body.trim()) return { error: null }
-      if (body === lastBody.current)
+      if (body === lastBodyRef.current)
         return { error: 'Hai appena inviato lo stesso messaggio.' }
       const now = Date.now()
       sendTimes.current = sendTimes.current.filter((t) => now - t < RATE_WINDOW_MS)
       if (sendTimes.current.length >= RATE_LIMIT)
         return { error: 'Stai scrivendo troppo in fretta, rallenta un attimo.' }
 
-      const { error } = await supabase.from('private_messages').insert({
-        thread_id: activeThreadId,
-        sender_id: myId,
-        body,
-      })
-      if (error) {
-        // RLS blocca l'invio se l'altro utente ti ha bloccato.
-        if (error.code === '42501' || error.message.includes('policy'))
-          return { error: 'Non puoi inviare messaggi a questo utente.' }
-        return { error: error.message }
+      try {
+        await addDoc(collection(db, 'privateThreads', activeThreadId, 'messages'), {
+          sender_id: myId,
+          body,
+          created_at: serverTimestamp(),
+          read_at: null,
+        })
+        await updateDoc(doc(db, 'privateThreads', activeThreadId), {
+          last_body: body,
+          last_at: serverTimestamp(),
+          last_sender: myId,
+          [`reads.${myId}`]: Date.now(),
+        })
+      } catch {
+        // Le Security Rules bloccano l'invio se l'altro utente ti ha bloccato.
+        return { error: 'Non puoi inviare messaggi a questo utente.' }
       }
       sendTimes.current.push(now)
-      lastBody.current = body
+      lastBodyRef.current = body
       return { error: null }
     },
     [myId, activeThreadId],
@@ -250,11 +268,6 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
   const totalUnread = useMemo(
     () => threads.reduce((sum, t) => sum + t.unread, 0),
     [threads],
-  )
-
-  const activeMessages = useMemo(
-    () => (activeThreadId ? messagesByThread[activeThreadId] ?? [] : []),
-    [activeThreadId, messagesByThread],
   )
 
   const value = useMemo<PrivateChatContextValue>(

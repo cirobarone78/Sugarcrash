@@ -18,7 +18,7 @@ export function MessageBubble({ message, isOwn, onAuthorClick, onReport }: Messa
     )
   }
 
-  const name = message.author?.username ?? 'utente'
+  const name = message.author_username ?? 'utente'
 
   return (
     <div className={`group flex gap-2 ${isOwn ? 'flex-row-reverse' : ''}`}>
@@ -27,7 +27,7 @@ export function MessageBubble({ message, isOwn, onAuthorClick, onReport }: Messa
         className="mt-1 shrink-0"
         aria-label={`Profilo di ${name}`}
       >
-        <Avatar username={name} avatarUrl={message.author?.avatar_url} size={32} />
+        <Avatar username={name} avatarUrl={message.author_avatar_url} size={32} />
       </button>
       <div className={`flex max-w-[78%] flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
         <div className="flex items-center gap-2 px-1">

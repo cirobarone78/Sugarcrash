@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
+import { doc, getDoc } from 'firebase/firestore'
 import { Modal } from './Modal'
 import { Avatar } from './Avatar'
-import { supabase } from '../lib/supabase'
+import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { usePrivateChat } from '../context/PrivateChatContext'
 import { useBlocks } from '../hooks/useBlocks'
-import { statusColor, statusLabel } from '../lib/utils'
+import { statusColor, statusLabel, tsToMillis } from '../lib/utils'
 import type { Profile } from '../lib/types'
 
 interface UserProfilePopoverProps {
@@ -31,12 +32,22 @@ export function UserProfilePopover({
   useEffect(() => {
     if (!open || !userId) return
     setProfile(null)
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle()
-      .then(({ data }) => setProfile((data as Profile) ?? null))
+    getDoc(doc(db, 'profiles', userId)).then((snap) => {
+      if (!snap.exists()) {
+        setProfile(null)
+        return
+      }
+      const d = snap.data()
+      setProfile({
+        id: snap.id,
+        username: (d.username as string) ?? 'utente',
+        avatar_url: (d.avatar_url as string | null) ?? null,
+        status: (d.status as Profile['status']) ?? 'online',
+        is_invisible: Boolean(d.is_invisible),
+        created_at: tsToMillis(d.created_at),
+        updated_at: tsToMillis(d.updated_at),
+      })
+    })
   }, [open, userId])
 
   const isSelf = userId === me?.id

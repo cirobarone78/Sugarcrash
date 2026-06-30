@@ -1,20 +1,25 @@
 // Helper WebRTC per la webcam privata 1:1.
 //
-// SIGNALING: usiamo Supabase Realtime (canale "broadcast" dedicato per sessione)
-// come canale di segnalazione. È la soluzione più semplice e, soprattutto, la
-// più rispettosa della privacy: offerte/risposte/candidati ICE NON vengono mai
-// salvati su database, transitano solo in tempo reale e svaniscono.
+// SIGNALING: usiamo il Realtime Database di Firebase come canale di
+// segnalazione, sotto il nodo effimero `signals/<sessionId>`. I messaggi
+// (ready/offer/answer/ice/bye) vengono aggiunti con push() e letti con
+// onChildAdded; alla chiusura il nodo viene rimosso. Nessun dato resta salvato.
 //
-// In alternativa (reti che non permettono il websocket di Supabase, o se si
+// In alternativa (reti che bloccano il websocket di Firebase, o per chi
 // preferisce un signaling server proprio) è incluso un piccolo server Node
 // WebSocket in /signaling con la stessa semantica di messaggi: vedi README.
-//
-// La tabella `webrtc_signals` rimane disponibile nello schema come fallback
-// persistente documentato, ma di default non viene usata.
 
-import { supabase } from './supabase'
 import { getIceServers } from './utils'
-import type { RealtimeChannel } from '@supabase/supabase-js'
+import { rtdb } from './firebase'
+import {
+  ref,
+  push,
+  onChildAdded,
+  remove,
+  onDisconnect,
+  type DatabaseReference,
+  type Unsubscribe,
+} from 'firebase/database'
 
 // Omit distributivo: preserva i membri della union (Omit standard collasserebbe
 // la union sulle sole chiavi comuni).
@@ -44,13 +49,14 @@ export function createPeerConnection(): RTCPeerConnection {
 }
 
 /**
- * Canale di signaling per una specifica sessione webcam.
- * Wrappa un canale broadcast di Supabase Realtime.
+ * Canale di signaling per una specifica sessione webcam, su Realtime Database.
+ * Nodo: `signals/<sessionId>` — effimero, rimosso alla chiusura.
  */
 export class SignalingChannel {
-  private channel: RealtimeChannel
+  private nodeRef: DatabaseReference
   private selfId: string
   private onMessage: (msg: SignalMessage) => void
+  private unsub: Unsubscribe | null = null
 
   constructor(
     sessionId: string,
@@ -59,37 +65,34 @@ export class SignalingChannel {
   ) {
     this.selfId = selfId
     this.onMessage = onMessage
-    this.channel = supabase.channel(`webrtc:${sessionId}`, {
-      config: { broadcast: { ack: false, self: false } },
-    })
+    this.nodeRef = ref(rtdb, `signals/${sessionId}`)
   }
 
   async subscribe(): Promise<void> {
-    this.channel.on('broadcast', { event: 'signal' }, ({ payload }) => {
-      const msg = payload as SignalMessage
-      // ignora gli echo dei propri messaggi
-      if (msg.from === this.selfId) return
+    // se la connessione cade, prova comunque a ripulire il nodo
+    onDisconnect(this.nodeRef).remove()
+    this.unsub = onChildAdded(this.nodeRef, (snap) => {
+      const msg = snap.val() as SignalMessage | null
+      if (!msg) return
+      if (msg.from === this.selfId) return // ignora i propri messaggi
       this.onMessage(msg)
-    })
-    await new Promise<void>((resolve, reject) => {
-      this.channel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') resolve()
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT')
-          reject(new Error('Signaling channel non disponibile'))
-      })
     })
   }
 
   send(msg: OutgoingSignal): void {
-    void this.channel.send({
-      type: 'broadcast',
-      event: 'signal',
-      payload: { ...msg, from: this.selfId },
-    })
+    void push(this.nodeRef, { ...msg, from: this.selfId })
   }
 
   async close(): Promise<void> {
-    await supabase.removeChannel(this.channel)
+    if (this.unsub) {
+      this.unsub()
+      this.unsub = null
+    }
+    try {
+      await remove(this.nodeRef)
+    } catch {
+      /* noop */
+    }
   }
 }
 

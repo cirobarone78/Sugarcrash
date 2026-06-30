@@ -8,15 +8,26 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Session } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import {
+  onAuthStateChanged,
+  signOut as firebaseSignOut,
+  type User,
+} from 'firebase/auth'
+import {
+  doc,
+  onSnapshot,
+  updateDoc,
+  runTransaction,
+  serverTimestamp,
+} from 'firebase/firestore'
+import { auth, db } from '../lib/firebase'
+import { tsToMillis } from '../lib/utils'
 import type { Profile, UserStatus } from '../lib/types'
 
 interface AuthContextValue {
-  session: Session | null
+  user: User | null
   profile: Profile | null
   loading: boolean
-  /** true finché l'utente non ha scelto un nickname definitivo */
   needsProfileSetup: boolean
   refreshProfile: () => Promise<void>
   updateProfile: (patch: Partial<Profile>) => Promise<{ error: string | null }>
@@ -26,71 +37,131 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
-// Lo username provvisorio creato dal trigger SQL ha la forma user_<12hex>.
-const PROVISIONAL_RE = /^user_[0-9a-f]{12}$/
+const PROVISIONAL_RE = /^user_[0-9a-z]{6,}$/i
+
+function mapProfile(id: string, data: Record<string, unknown>): Profile {
+  return {
+    id,
+    username: (data.username as string) ?? '',
+    username_lower: data.username_lower as string | undefined,
+    avatar_url: (data.avatar_url as string | null) ?? null,
+    status: (data.status as UserStatus) ?? 'online',
+    is_invisible: Boolean(data.is_invisible),
+    created_at: tsToMillis(data.created_at),
+    updated_at: tsToMillis(data.updated_at),
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-  const userIdRef = useRef<string | null>(null)
+  const profileUnsub = useRef<(() => void) | null>(null)
 
-  const loadProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle()
-    setProfile((data as Profile) ?? null)
+  // Garantisce l'esistenza del doc profilo (username provvisorio al 1° accesso).
+  const ensureProfile = useCallback(async (u: User) => {
+    const ref = doc(db, 'profiles', u.uid)
+    const provisional = 'user_' + u.uid.replace(/[^a-z0-9]/gi, '').slice(0, 10).toLowerCase()
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(ref)
+      if (!snap.exists()) {
+        tx.set(ref, {
+          username: provisional,
+          username_lower: provisional,
+          avatar_url: null,
+          status: 'online',
+          is_invisible: false,
+          created_at: serverTimestamp(),
+          updated_at: serverTimestamp(),
+        })
+      }
+    }).catch(() => undefined)
   }, [])
 
-  const refreshProfile = useCallback(async () => {
-    if (userIdRef.current) await loadProfile(userIdRef.current)
-  }, [loadProfile])
-
   useEffect(() => {
-    let active = true
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      // chiudi eventuale listener profilo precedente
+      profileUnsub.current?.()
+      profileUnsub.current = null
+      setUser(u)
 
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!active) return
-      setSession(data.session)
-      userIdRef.current = data.session?.user.id ?? null
-      if (data.session) await loadProfile(data.session.user.id)
-      setLoading(false)
-    })
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession)
-      userIdRef.current = newSession?.user.id ?? null
-      if (newSession) {
-        void loadProfile(newSession.user.id)
-      } else {
+      if (!u) {
         setProfile(null)
+        setLoading(false)
+        return
       }
-    })
 
+      await ensureProfile(u)
+      const ref = doc(db, 'profiles', u.uid)
+      profileUnsub.current = onSnapshot(ref, (snap) => {
+        setProfile(snap.exists() ? mapProfile(snap.id, snap.data()) : null)
+        setLoading(false)
+      })
+    })
     return () => {
-      active = false
-      sub.subscription.unsubscribe()
+      unsub()
+      profileUnsub.current?.()
     }
-  }, [loadProfile])
+  }, [ensureProfile])
+
+  const refreshProfile = useCallback(async () => {
+    // con onSnapshot il profilo è già live: no-op mantenuto per compatibilità.
+  }, [])
 
   const updateProfile = useCallback(
     async (patch: Partial<Profile>): Promise<{ error: string | null }> => {
-      if (!userIdRef.current) return { error: 'Non autenticato.' }
-      const { error } = await supabase
-        .from('profiles')
-        .update(patch)
-        .eq('id', userIdRef.current)
-      if (error) {
-        if (error.code === '23505')
-          return { error: 'Questo nickname è già in uso. Scegline un altro.' }
-        return { error: error.message }
+      if (!user) return { error: 'Non autenticato.' }
+      const ref = doc(db, 'profiles', user.uid)
+
+      // Cambio username → transazione per garantire l'unicità.
+      if (patch.username !== undefined) {
+        const newName = patch.username.trim()
+        const lower = newName.toLowerCase()
+        try {
+          await runTransaction(db, async (tx) => {
+            const unameRef = doc(db, 'usernames', lower)
+            const unameSnap = await tx.get(unameRef)
+            if (unameSnap.exists() && unameSnap.data().uid !== user.uid) {
+              throw new Error('USERNAME_TAKEN')
+            }
+            const profSnap = await tx.get(ref)
+            const oldLower = profSnap.data()?.username_lower as string | undefined
+            if (oldLower && oldLower !== lower) {
+              tx.delete(doc(db, 'usernames', oldLower))
+            }
+            tx.set(unameRef, { uid: user.uid })
+            tx.set(
+              ref,
+              {
+                username: newName,
+                username_lower: lower,
+                avatar_url: patch.avatar_url ?? profSnap.data()?.avatar_url ?? null,
+                updated_at: serverTimestamp(),
+              },
+              { merge: true },
+            )
+          })
+        } catch (err) {
+          if (err instanceof Error && err.message === 'USERNAME_TAKEN')
+            return { error: 'Questo nickname è già in uso. Scegline un altro.' }
+          return { error: 'Impossibile aggiornare il profilo.' }
+        }
+        return { error: null }
       }
-      await refreshProfile()
+
+      // Altri aggiornamenti (avatar, status, ...)
+      const data: Record<string, unknown> = { updated_at: serverTimestamp() }
+      if (patch.avatar_url !== undefined) data.avatar_url = patch.avatar_url
+      if (patch.status !== undefined) data.status = patch.status
+      if (patch.is_invisible !== undefined) data.is_invisible = patch.is_invisible
+      try {
+        await updateDoc(ref, data)
+      } catch {
+        return { error: 'Impossibile aggiornare il profilo.' }
+      }
       return { error: null }
     },
-    [refreshProfile],
+    [user],
   )
 
   const setStatus = useCallback(
@@ -101,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut()
+    await firebaseSignOut(auth)
     setProfile(null)
   }, [])
 
@@ -112,7 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      session,
+      user,
       profile,
       loading,
       needsProfileSetup,
@@ -121,7 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus,
       signOut,
     }),
-    [session, profile, loading, needsProfileSetup, refreshProfile, updateProfile, setStatus, signOut],
+    [user, profile, loading, needsProfileSetup, refreshProfile, updateProfile, setStatus, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

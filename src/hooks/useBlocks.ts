@@ -1,8 +1,16 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { createElement } from 'react'
-import { supabase } from '../lib/supabase'
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
+import { collection, deleteDoc, doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
+import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
-import type { BlockedUser } from '../lib/types'
 
 interface BlocksContextValue {
   blockedIds: Set<string>
@@ -16,54 +24,43 @@ const BlocksContext = createContext<BlocksContextValue | undefined>(undefined)
 export function BlocksProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth()
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set())
+  const myId = profile?.id ?? null
 
-  const reload = useCallback(async () => {
-    if (!profile) {
+  // Blocchi: subcollection blocks/{myId}/list/{blockedId}
+  useEffect(() => {
+    if (!myId) {
       setBlockedIds(new Set())
       return
     }
-    const { data } = await supabase
-      .from('blocked_users')
-      .select('blocked_id')
-      .eq('blocker_id', profile.id)
-    setBlockedIds(new Set(((data as Pick<BlockedUser, 'blocked_id'>[]) ?? []).map((r) => r.blocked_id)))
-  }, [profile])
-
-  useEffect(() => {
-    void reload()
-  }, [reload])
+    const listRef = collection(db, 'blocks', myId, 'list')
+    const unsub = onSnapshot(listRef, (snap) => {
+      setBlockedIds(new Set(snap.docs.map((d) => d.id)))
+    })
+    return () => unsub()
+  }, [myId])
 
   const block = useCallback(
     async (userId: string) => {
-      if (!profile || userId === profile.id) return
-      await supabase
-        .from('blocked_users')
-        .insert({ blocker_id: profile.id, blocked_id: userId })
-      await supabase.from('moderation_events').insert({
-        user_id: profile.id,
+      if (!myId || userId === myId) return
+      await setDoc(doc(db, 'blocks', myId, 'list', userId), {
+        created_at: serverTimestamp(),
+      })
+      await setDoc(doc(collection(db, 'moderation_events')), {
+        user_id: myId,
         event_type: 'block_user',
         metadata: { blocked_id: userId },
+        created_at: serverTimestamp(),
       })
-      setBlockedIds((prev) => new Set(prev).add(userId))
     },
-    [profile],
+    [myId],
   )
 
   const unblock = useCallback(
     async (userId: string) => {
-      if (!profile) return
-      await supabase
-        .from('blocked_users')
-        .delete()
-        .eq('blocker_id', profile.id)
-        .eq('blocked_id', userId)
-      setBlockedIds((prev) => {
-        const next = new Set(prev)
-        next.delete(userId)
-        return next
-      })
+      if (!myId) return
+      await deleteDoc(doc(db, 'blocks', myId, 'list', userId))
     },
-    [profile],
+    [myId],
   )
 
   const isBlocked = useCallback((userId: string) => blockedIds.has(userId), [blockedIds])

@@ -36,10 +36,32 @@ export function orderedPair(id1: string, id2: string): [string, string] {
   return id1 < id2 ? [id1, id2] : [id2, id1]
 }
 
-/** Orario breve HH:MM */
-export function formatTime(iso: string): string {
-  const d = new Date(iso)
+/** Orario breve HH:MM da epoch ms (o stringa ISO). */
+export function formatTime(value: number | string): string {
+  const d = new Date(value)
   return d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+}
+
+/**
+ * Converte un campo timestamp di Firestore (Timestamp | number | null) in
+ * epoch millisecondi. Durante la scrittura ottimistica può essere null:
+ * in quel caso usiamo "ora".
+ */
+export function tsToMillis(value: unknown): number {
+  if (value == null) return Date.now()
+  if (typeof value === 'number') return value
+  if (typeof value === 'object' && 'toMillis' in (value as object)) {
+    try {
+      return (value as { toMillis: () => number }).toMillis()
+    } catch {
+      return Date.now()
+    }
+  }
+  if (typeof value === 'string') {
+    const n = Date.parse(value)
+    return Number.isNaN(n) ? Date.now() : n
+  }
+  return Date.now()
 }
 
 /** Durata mm:ss da un numero di secondi */

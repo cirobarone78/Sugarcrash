@@ -1,15 +1,17 @@
-// Tipi condivisi dell'applicazione, allineati allo schema SQL.
+// Tipi condivisi dell'applicazione (modello dati Firebase/Firestore).
+// I timestamp sono epoch in millisecondi (number) per semplicità lato client.
 
 export type UserStatus = 'online' | 'busy' | 'invisible'
 
 export interface Profile {
   id: string
   username: string
+  username_lower?: string
   avatar_url: string | null
   status: UserStatus
   is_invisible: boolean
-  created_at: string
-  updated_at: string
+  created_at: number
+  updated_at: number
 }
 
 export interface Room {
@@ -19,7 +21,6 @@ export interface Room {
   description: string | null
   topic: string | null
   is_public: boolean
-  created_at: string
 }
 
 export type MessageType = 'text' | 'system'
@@ -30,16 +31,18 @@ export interface Message {
   user_id: string | null
   body: string
   message_type: MessageType
-  created_at: string
-  // arricchito lato client
-  author?: Pick<Profile, 'id' | 'username' | 'avatar_url'> | null
+  created_at: number
+  // denormalizzati al momento dell'invio (Firestore-friendly)
+  author_username?: string | null
+  author_avatar_url?: string | null
 }
 
 export interface PrivateThread {
   id: string
   user_a: string
   user_b: string
-  created_at: string
+  participants: string[]
+  created_at: number
 }
 
 export interface PrivateMessage {
@@ -47,15 +50,15 @@ export interface PrivateMessage {
   thread_id: string
   sender_id: string
   body: string
-  created_at: string
-  read_at: string | null
+  created_at: number
+  read_at: number | null
 }
 
 export interface BlockedUser {
   id: string
   blocker_id: string
   blocked_id: string
-  created_at: string
+  created_at: number
 }
 
 export type WebcamStatus =
@@ -70,30 +73,20 @@ export interface WebcamSession {
   thread_id: string
   broadcaster_id: string
   viewer_id: string
+  participants: string[]
   audio_enabled: boolean
   status: WebcamStatus
-  created_at: string
-  accepted_at: string | null
-  ended_at: string | null
+  created_at: number
+  accepted_at: number | null
+  ended_at: number | null
 }
 
-export type SignalType = 'offer' | 'answer' | 'ice'
-
-export interface WebrtcSignal {
-  id: string
-  session_id: string
-  sender_id: string
-  recipient_id: string
-  signal_type: SignalType
-  payload: unknown
-  created_at: string
-}
-
-// Presence payload condiviso via Supabase Presence
-export interface PresenceState {
+// Stato di presence pubblicato su Realtime Database
+export interface PresenceUser {
   user_id: string
   username: string
   avatar_url: string | null
   status: UserStatus
-  online_at: string
+  room: string | null
+  online_at: number
 }

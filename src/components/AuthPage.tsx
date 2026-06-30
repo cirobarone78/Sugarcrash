@@ -1,5 +1,10 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabase'
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from 'firebase/auth'
+import { FirebaseError } from 'firebase/app'
+import { auth } from '../lib/firebase'
 
 export function AuthPage() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
@@ -16,18 +21,13 @@ export function AuthPage() {
     setBusy(true)
     try {
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({ email, password })
-        if (error) throw error
-        setInfo(
-          'Registrazione avviata. Se la conferma email è attiva, controlla la posta e poi accedi.',
-        )
-        setMode('signin')
+        await createUserWithEmailAndPassword(auth, email, password)
+        // l'utente viene loggato automaticamente; il profilo è creato dal context
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) throw error
+        await signInWithEmailAndPassword(auth, email, password)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Errore imprevisto.')
+      setError(authErrorMessage(err))
     } finally {
       setBusy(false)
     }
@@ -109,4 +109,28 @@ export function AuthPage() {
       </div>
     </div>
   )
+}
+
+function authErrorMessage(err: unknown): string {
+  if (err instanceof FirebaseError) {
+    switch (err.code) {
+      case 'auth/invalid-email':
+        return 'Email non valida.'
+      case 'auth/email-already-in-use':
+        return 'Esiste già un account con questa email. Prova ad accedere.'
+      case 'auth/weak-password':
+        return 'Password troppo debole (almeno 6 caratteri).'
+      case 'auth/invalid-credential':
+      case 'auth/wrong-password':
+      case 'auth/user-not-found':
+        return 'Email o password non corretti.'
+      case 'auth/too-many-requests':
+        return 'Troppi tentativi. Riprova tra poco.'
+      case 'auth/operation-not-allowed':
+        return 'Accesso email/password non abilitato nel progetto Firebase.'
+      default:
+        return 'Errore di autenticazione. Riprova.'
+    }
+  }
+  return 'Errore imprevisto.'
 }

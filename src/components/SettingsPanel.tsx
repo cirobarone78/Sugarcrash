@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Modal } from './Modal'
 import { Avatar } from './Avatar'
+import { doc, getDoc } from 'firebase/firestore'
 import { useAuth } from '../context/AuthContext'
 import { useBlocks } from '../hooks/useBlocks'
-import { supabase } from '../lib/supabase'
+import { db } from '../lib/firebase'
 import { isSoundEnabled, setSoundEnabled } from '../lib/sounds'
 import { statusColor, statusLabel } from '../lib/utils'
 import type { Profile, UserStatus } from '../lib/types'
@@ -34,11 +35,17 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
       setBlockedProfiles([])
       return
     }
-    supabase
-      .from('profiles')
-      .select('id, username, avatar_url')
-      .in('id', ids)
-      .then(({ data }) => setBlockedProfiles((data as typeof blockedProfiles) ?? []))
+    Promise.all(ids.map((id) => getDoc(doc(db, 'profiles', id)))).then((snaps) => {
+      setBlockedProfiles(
+        snaps
+          .filter((s) => s.exists())
+          .map((s) => ({
+            id: s.id,
+            username: (s.data()!.username as string) ?? 'utente',
+            avatar_url: (s.data()!.avatar_url as string | null) ?? null,
+          })),
+      )
+    })
   }, [open, blockedIds])
 
   function toggleSound() {

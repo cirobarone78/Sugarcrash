@@ -1,0 +1,22 @@
+{
+  "//": "Security Rules Realtime Database per RetroCam Chat (presence + signaling WebRTC).",
+  "//deploy": "Console Firebase -> Realtime Database -> Regole, oppure: firebase deploy --only database",
+  "rules": {
+    "status": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['user_id','username','status']) || !newData.exists()"
+      }
+    },
+    "signals": {
+      "$sessionId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$signalId": {
+          ".validate": "newData.hasChildren(['kind','from'])"
+        }
+      }
+    }
+  }
+}

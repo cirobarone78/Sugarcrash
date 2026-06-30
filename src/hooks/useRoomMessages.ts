@@ -1,131 +1,96 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import {
+  addDoc,
+  collection,
+  limitToLast,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+} from 'firebase/firestore'
+import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
-import { sanitizeMessage } from '../lib/utils'
+import { sanitizeMessage, tsToMillis } from '../lib/utils'
 import { playMessageSound } from '../lib/sounds'
-import type { Message, Profile } from '../lib/types'
+import type { Message } from '../lib/types'
 
 const PAGE_SIZE = 80
-// Anti-spam: max 5 messaggi ogni 7 secondi + niente duplicati consecutivi.
 const RATE_LIMIT = 5
 const RATE_WINDOW_MS = 7000
 
-type AuthorLite = Pick<Profile, 'id' | 'username' | 'avatar_url'>
+function mapMessage(id: string, roomId: string, data: Record<string, unknown>): Message {
+  return {
+    id,
+    room_id: roomId,
+    user_id: (data.user_id as string | null) ?? null,
+    body: (data.body as string) ?? '',
+    message_type: (data.message_type as Message['message_type']) ?? 'text',
+    created_at: tsToMillis(data.created_at),
+    author_username: (data.author_username as string | null) ?? null,
+    author_avatar_url: (data.author_avatar_url as string | null) ?? null,
+  }
+}
 
 export function useRoomMessages(roomId: string | null) {
   const { profile } = useAuth()
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
-  const authorCache = useRef<Map<string, AuthorLite>>(new Map())
+  const initialized = useRef(false)
   const sendTimes = useRef<number[]>([])
   const lastBody = useRef<string>('')
 
-  const fetchAuthors = useCallback(async (ids: string[]) => {
-    const missing = ids.filter((id) => id && !authorCache.current.has(id))
-    if (missing.length === 0) return
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, username, avatar_url')
-      .in('id', missing)
-    for (const p of (data as AuthorLite[]) ?? []) {
-      authorCache.current.set(p.id, p)
-    }
-  }, [])
-
-  // Caricamento iniziale
   useEffect(() => {
     if (!roomId) {
       setMessages([])
       return
     }
-    let active = true
     setLoading(true)
-    ;(async () => {
-      const { data } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('room_id', roomId)
-        .order('created_at', { ascending: false })
-        .limit(PAGE_SIZE)
-      const rows = ((data as Message[]) ?? []).reverse()
-      await fetchAuthors(rows.map((m) => m.user_id ?? '').filter(Boolean))
-      if (!active) return
-      setMessages(
-        rows.map((m) => ({
-          ...m,
-          author: m.user_id ? authorCache.current.get(m.user_id) ?? null : null,
-        })),
-      )
+    initialized.current = false
+    const col = collection(db, 'rooms', roomId, 'messages')
+    const q = query(col, orderBy('created_at'), limitToLast(PAGE_SIZE))
+    const unsub = onSnapshot(q, (snap) => {
+      setMessages(snap.docs.map((d) => mapMessage(d.id, roomId, d.data())))
       setLoading(false)
-    })()
-    return () => {
-      active = false
-    }
-  }, [roomId, fetchAuthors])
-
-  // Realtime
-  useEffect(() => {
-    if (!roomId) return
-    const channel = supabase
-      .channel(`room-messages:${roomId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `room_id=eq.${roomId}`,
-        },
-        async (payload) => {
-          const row = payload.new as Message
-          if (row.user_id) await fetchAuthors([row.user_id])
-          const enriched: Message = {
-            ...row,
-            author: row.user_id
-              ? authorCache.current.get(row.user_id) ?? null
-              : null,
+      // suono per i nuovi messaggi altrui (dopo il primo caricamento)
+      if (initialized.current) {
+        for (const change of snap.docChanges()) {
+          if (change.type === 'added') {
+            const data = change.doc.data()
+            if (data.message_type === 'text' && data.user_id !== profile?.id) {
+              playMessageSound()
+            }
           }
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === enriched.id)) return prev
-            return [...prev, enriched]
-          })
-          if (
-            row.message_type === 'text' &&
-            row.user_id !== profile?.id
-          ) {
-            playMessageSound()
-          }
-        },
-      )
-      .subscribe()
-    return () => {
-      void supabase.removeChannel(channel)
-    }
-  }, [roomId, profile?.id, fetchAuthors])
+        }
+      }
+      initialized.current = true
+    })
+    return () => unsub()
+  }, [roomId, profile?.id])
 
   const sendMessage = useCallback(
     async (raw: string): Promise<{ error: string | null }> => {
       if (!roomId || !profile) return { error: 'Non disponibile.' }
       const body = sanitizeMessage(raw)
       if (!body.trim()) return { error: null }
-
-      // anti-spam: duplicato consecutivo
       if (body === lastBody.current)
         return { error: 'Hai appena inviato lo stesso messaggio.' }
-
-      // anti-spam: rate limit
       const now = Date.now()
       sendTimes.current = sendTimes.current.filter((t) => now - t < RATE_WINDOW_MS)
       if (sendTimes.current.length >= RATE_LIMIT)
         return { error: 'Stai scrivendo troppo in fretta, rallenta un attimo.' }
 
-      const { error } = await supabase.from('messages').insert({
-        room_id: roomId,
-        user_id: profile.id,
-        body,
-        message_type: 'text',
-      })
-      if (error) return { error: error.message }
+      try {
+        await addDoc(collection(db, 'rooms', roomId, 'messages'), {
+          user_id: profile.id,
+          body,
+          message_type: 'text',
+          author_username: profile.username,
+          author_avatar_url: profile.avatar_url,
+          created_at: serverTimestamp(),
+        })
+      } catch {
+        return { error: 'Invio non riuscito.' }
+      }
       sendTimes.current.push(now)
       lastBody.current = body
       return { error: null }
@@ -136,11 +101,13 @@ export function useRoomMessages(roomId: string | null) {
   const sendSystem = useCallback(
     async (body: string) => {
       if (!roomId || !profile) return
-      await supabase.from('messages').insert({
-        room_id: roomId,
+      await addDoc(collection(db, 'rooms', roomId, 'messages'), {
         user_id: profile.id,
         body,
         message_type: 'system',
+        author_username: null,
+        author_avatar_url: null,
+        created_at: serverTimestamp(),
       })
     },
     [roomId, profile],

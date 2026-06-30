@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { Modal } from './Modal'
-import { supabase } from '../lib/supabase'
+import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 
 export interface ReportTarget {
@@ -35,17 +36,19 @@ export function ReportDialog({ open, onClose, target }: ReportDialogProps) {
     if (!profile || !target) return
     setBusy(true)
     const fullReason = details.trim() ? `${reason} — ${details.trim()}` : reason
-    await supabase.from('reports').insert({
+    await addDoc(collection(db, 'reports'), {
       reporter_id: profile.id,
       reported_user_id: target.reportedUserId ?? null,
       message_id: target.messageId ?? null,
       private_message_id: target.privateMessageId ?? null,
       reason: fullReason.slice(0, 1000),
+      created_at: serverTimestamp(),
     })
-    await supabase.from('moderation_events').insert({
+    await addDoc(collection(db, 'moderation_events'), {
       user_id: profile.id,
       event_type: 'report',
       metadata: { ...target, reason: fullReason },
+      created_at: serverTimestamp(),
     })
     setBusy(false)
     setDone(true)
