@@ -261,6 +261,16 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
       if (sendTimes.current.length >= RATE_LIMIT) return { error: t('chat.tooFast') }
 
       try {
+        // assicura che il thread esista (potrebbe non essere stato creato
+        // se un tentativo precedente era stato rifiutato dalle regole)
+        if (activeOther) {
+          const [a, b] = orderedPair(myId, activeOther.id)
+          await setDoc(
+            doc(db, 'privateThreads', activeThreadId),
+            { user_a: a, user_b: b, participants: [a, b] },
+            { merge: true },
+          )
+        }
         await addDoc(collection(db, 'privateThreads', activeThreadId, 'messages'), {
           sender_id: myId,
           body,
@@ -281,7 +291,7 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
       lastBodyRef.current = body
       return { error: null }
     },
-    [myId, activeThreadId, t],
+    [myId, activeThreadId, activeOther, t],
   )
 
   const totalUnread = useMemo(

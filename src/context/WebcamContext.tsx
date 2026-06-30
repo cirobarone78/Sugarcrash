@@ -89,7 +89,7 @@ function mapSession(id: string, d: Record<string, unknown>): WebcamSession {
 
 export function WebcamProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth()
-  const { openThread, setDrawerOpen } = usePrivateChat()
+  const { openThreadWith, setDrawerOpen } = usePrivateChat()
   const { isBlocked } = useBlocks()
   const { t } = useI18n()
   const supported = isWebRTCSupported()
@@ -286,10 +286,11 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
     inPeer.current = peer
     setIncoming({ session, remoteStream: null, connState: 'new' })
     setPendingInvite(null)
-    openThread(session.thread_id)
+    // apre la finestra privata con il broadcaster come interlocutore
+    void openThreadWith(session.broadcaster_id)
     setDrawerOpen(true)
     await peer.connect()
-  }, [pendingInvite, myId, openThread, setDrawerOpen, teardownIncoming])
+  }, [pendingInvite, myId, openThreadWith, setDrawerOpen, teardownIncoming])
 
   const declineInvite = useCallback(async () => {
     if (!pendingInvite) return

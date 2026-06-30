@@ -11,10 +11,12 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function uid() { return request.auth.uid; }
 
-    // L'utente è registrato (non ospite)? Legge il proprio profilo.
+    // L'utente è registrato (non ospite)? Lo deduciamo dal provider di accesso:
+    // gli ospiti usano l'auth anonima, i registrati email/password (o altri).
+    // Robusto e senza letture extra su Firestore.
     function isRegistered() {
       return signedIn()
-        && get(/databases/$(database)/documents/profiles/$(uid())).data.is_guest == false;
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
 
     // profiles: lettura pubblica (per mostrare nickname/avatar), scrittura solo del proprio
