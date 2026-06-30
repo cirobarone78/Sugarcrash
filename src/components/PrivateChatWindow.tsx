@@ -18,25 +18,24 @@ interface PrivateChatWindowProps {
 export function PrivateChatWindow({ onBack, headerActions, webcamArea }: PrivateChatWindowProps) {
   const { profile } = useAuth()
   const { openUserProfile, openReport, openBlock } = useUI()
-  const { threads, activeThreadId, activeMessages, sendPrivate } = usePrivateChat()
+  const { threads, activeThreadId, activeOther, activeMessages, sendPrivate } = usePrivateChat()
   const { t } = useI18n()
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const current = threads.find((t) => t.thread.id === activeThreadId)
+  const other = current?.other ?? activeOther
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [activeMessages.length])
 
-  if (!current) {
+  if (!other) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-ink-400">
         {t('pm.selectConv')}
       </div>
     )
   }
-
-  const other = current.other
 
   return (
     <div className="flex h-full flex-col">

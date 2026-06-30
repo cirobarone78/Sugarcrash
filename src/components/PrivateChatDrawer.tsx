@@ -9,13 +9,13 @@ import { WebcamLaunchButton, WebcamPanel } from './WebcamPanel'
  * Integra i controlli webcam (Fase 2) per la conversazione attiva.
  */
 export function PrivateChatDrawer() {
-  const { drawerOpen, setDrawerOpen, threads, activeThreadId, closeThread } = usePrivateChat()
+  const { drawerOpen, setDrawerOpen, threads, activeThreadId, activeOther, closeThread } = usePrivateChat()
   const { t } = useI18n()
 
   if (!drawerOpen) return null
 
   const current = threads.find((t) => t.thread.id === activeThreadId)
-  const other = current?.other
+  const other = current?.other ?? activeOther
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end bg-black/50" onClick={() => setDrawerOpen(false)}>

@@ -60,6 +60,8 @@ interface PrivateChatContextValue {
   activeMessages: PrivateMessage[]
   drawerOpen: boolean
   setDrawerOpen: (open: boolean) => void
+  /** Partecipante della conversazione attiva (fallback finché i thread si sincronizzano). */
+  activeOther: OtherLite | null
   openThreadWith: (userId: string) => Promise<void>
   openThread: (threadId: string) => void
   closeThread: () => void
@@ -81,6 +83,7 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
   const { t } = useI18n()
   const [threads, setThreads] = useState<ThreadView[]>([])
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null)
+  const [activeOther, setActiveOther] = useState<OtherLite | null>(null)
   const [activeMessages, setActiveMessages] = useState<PrivateMessage[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const activeRef = useRef<string | null>(null)
@@ -199,10 +202,13 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
     (tid: string) => {
       activeRef.current = tid
       setActiveThreadId(tid)
+      // imposta subito l'interlocutore dal thread già noto (se presente)
+      const known = threads.find((th) => th.thread.id === tid)
+      if (known) setActiveOther(known.other)
       setDrawerOpen(true)
       void markRead(tid)
     },
-    [markRead],
+    [markRead, threads],
   )
 
   const openThreadWith = useCallback(
@@ -210,25 +216,38 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
       if (!myId || userId === myId) return
       const [a, b] = orderedPair(myId, userId)
       const tid = threadId(a, b)
-      const ref = doc(db, 'privateThreads', tid)
-      const snap = await getDoc(ref)
-      if (!snap.exists()) {
-        await setDoc(ref, {
-          user_a: a,
-          user_b: b,
-          participants: [a, b],
-          created_at: serverTimestamp(),
-          reads: {},
-        })
+      // apriamo SUBITO la finestra con i dati dell'altro utente (no race)
+      const other = await fetchOther(userId)
+      setActiveOther(other)
+      activeRef.current = tid
+      setActiveThreadId(tid)
+      setDrawerOpen(true)
+      // crea il thread se non esiste (best-effort; non blocca l'apertura)
+      try {
+        const ref = doc(db, 'privateThreads', tid)
+        const snap = await getDoc(ref)
+        if (!snap.exists()) {
+          await setDoc(ref, {
+            user_a: a,
+            user_b: b,
+            participants: [a, b],
+            created_at: serverTimestamp(),
+            reads: {},
+          })
+        }
+        void markRead(tid)
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('[RetroCam] impossibile creare la conversazione privata', err)
       }
-      openThread(tid)
     },
-    [myId, openThread],
+    [myId, fetchOther, markRead],
   )
 
   const closeThread = useCallback(() => {
     activeRef.current = null
     setActiveThreadId(null)
+    setActiveOther(null)
   }, [])
 
   const sendPrivate = useCallback(
@@ -275,6 +294,7 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
       threads,
       totalUnread,
       activeThreadId,
+      activeOther,
       activeMessages,
       drawerOpen,
       setDrawerOpen,
@@ -283,7 +303,7 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
       closeThread,
       sendPrivate,
     }),
-    [threads, totalUnread, activeThreadId, activeMessages, drawerOpen, openThreadWith, openThread, closeThread, sendPrivate],
+    [threads, totalUnread, activeThreadId, activeOther, activeMessages, drawerOpen, openThreadWith, openThread, closeThread, sendPrivate],
   )
 
   return <PrivateChatContext.Provider value={value}>{children}</PrivateChatContext.Provider>
