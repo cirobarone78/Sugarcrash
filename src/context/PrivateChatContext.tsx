@@ -23,6 +23,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from './AuthContext'
+import { usePresence } from './PresenceContext'
 import { sanitizeMessage, orderedPair, tsToMillis } from '../lib/utils'
 import { playMessageSound } from '../lib/sounds'
 import { useI18n } from '../lib/i18n'
@@ -80,6 +81,7 @@ function threadId(a: string, b: string): string {
 
 export function PrivateChatProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth()
+  const { onlineUsers } = usePresence()
   const { t } = useI18n()
   const [threads, setThreads] = useState<ThreadView[]>([])
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null)
@@ -216,32 +218,52 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
       if (!myId || userId === myId) return
       const [a, b] = orderedPair(myId, userId)
       const tid = threadId(a, b)
-      // apriamo SUBITO la finestra con i dati dell'altro utente (no race)
-      const other = await fetchOther(userId)
+
+      // 1) APRI SUBITO la finestra: interlocutore dalla presence o dalla cache
+      //    (nessuna lettura Firestore bloccante nel percorso critico)
+      const pres = onlineUsers.find((u) => u.user_id === userId)
+      const other: OtherLite =
+        (pres && {
+          id: pres.user_id,
+          username: pres.username,
+          avatar_url: pres.avatar_url,
+          status: pres.status,
+        }) ||
+        profileCache.current.get(userId) || {
+          id: userId,
+          username: 'user',
+          avatar_url: null,
+          status: 'online',
+        }
+      profileCache.current.set(userId, other)
       setActiveOther(other)
       activeRef.current = tid
       setActiveThreadId(tid)
       setDrawerOpen(true)
-      // crea il thread se non esiste (best-effort; non blocca l'apertura)
-      try {
-        const ref = doc(db, 'privateThreads', tid)
-        const snap = await getDoc(ref)
-        if (!snap.exists()) {
-          await setDoc(ref, {
-            user_a: a,
-            user_b: b,
-            participants: [a, b],
-            created_at: serverTimestamp(),
-            reads: {},
-          })
+
+      // 2) in BACKGROUND: crea il thread se manca, segna letto, rifinisci i dati
+      ;(async () => {
+        try {
+          const ref = doc(db, 'privateThreads', tid)
+          const snap = await getDoc(ref)
+          if (!snap.exists()) {
+            await setDoc(ref, {
+              user_a: a,
+              user_b: b,
+              participants: [a, b],
+              created_at: serverTimestamp(),
+              reads: {},
+            })
+          }
+          void markRead(tid)
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error('[RetroCam] creazione thread privato fallita', err)
         }
-        void markRead(tid)
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('[RetroCam] impossibile creare la conversazione privata', err)
-      }
+        if (!pres) fetchOther(userId).then(setActiveOther)
+      })()
     },
-    [myId, fetchOther, markRead],
+    [myId, onlineUsers, fetchOther, markRead],
   )
 
   const closeThread = useCallback(() => {
