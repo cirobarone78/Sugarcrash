@@ -14,8 +14,8 @@ export default defineConfig({
         short_name: 'CamRooms',
         description:
           'Chatroom tematiche realtime con chat privata e webcam opzionale. Versione moderna e sicura delle vecchie webchat.',
-        theme_color: '#0a0a12',
-        background_color: '#0a0a12',
+        theme_color: '#0b1120',
+        background_color: '#0b1120',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
