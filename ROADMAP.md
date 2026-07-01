@@ -7,24 +7,25 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
 
 ---
 
-## 🔴 P0 — Sicurezza (bloccante) — Opus 4.8
-> Le regole vanno **ri-pubblicate in console** dall'utente dopo la modifica.
+## 🔴 P0 — Sicurezza (bloccante) — Opus 4.8 ✅ (codice) — regole DA RI-PUBBLICARE in console
+> ⚠️ Migrazione: le stanze private create prima di S3 (senza salt/secret) non
+> sono più accessibili e vanno ricreate.
 
-- ⬜ **S1** Validare i messaggi nelle Security Rules: `message_type ∈ {text,image}`;
-  se image → `image_url` allowlist `^data:image/(png|jpe?g|webp);base64,...` +
-  `size() <= 200000`. (`firebase/firestore.rules`, tutte le collezioni messaggi)
-- ⬜ **S2** Legare gli autori: `author_username/avatar/is_guest` vincolati al
-  profilo del chiamante, oppure rimossi e risolti a runtime da `profiles/{uid}`.
-- ⬜ **S3** Password stanze private: non esporre `pwd_hash` (sottodoc owner-only o
-  verifica via Cloud Function); salare l'hash.
-- ⬜ **S4** Signaling WebRTC: vincolare `signals/$sessionId` ai due partecipanti e
-  validare `from === auth.uid`. (`firebase/database.rules.json`)
-- ⬜ **S5** Presence: `.validate` `user_id === $uid` su `status/$uid`.
-- ⬜ **S6** Client: validare `image_url` con allowlist prima del render; togliere il
-  link `<a href>` a `data:` (aprire in modale). (`MessageBubble.tsx`,
-  `ChatWindowContent.tsx`, helper in `src/lib/`)
+- ✅ **S1** Validare i messaggi nelle Security Rules (`validMessage`): `message_type
+  ∈ {text,image}`; image → allowlist `^data:image/...;base64` + `size()<=210000`;
+  text → `image_url` assente.
+- ✅ **S2** Autori legati al profilo del chiamante (`authorBound`) su messaggi
+  stanze pubbliche/private.
+- ✅ **S3** Password stanze private: `pwd_hash` salato in sottodoc
+  `privateRooms/{id}/secret/hash` (`allow read: false`); doc principale espone
+  solo il `salt`.
+- ✅ **S4** Signaling WebRTC: `signals/$sessionId` vincolato all'allowlist
+  `participants/$uid` + `from === auth.uid`.
+- ✅ **S5** Presence: `.validate` `user_id === $uid` su `status/$uid`.
+- ✅ **S6** Client: `isSafeImageDataUrl()` prima del render; rimosso il link
+  `<a href>` a `data:`; immagine non valida → placeholder.
 - ⬜ **S7** Attivare **App Check** + budget alert Firestore; rate-limit server-side
-  (token-bucket doc o Cloud Function).
+  (token-bucket doc o Cloud Function). *(richiede azione in console)*
 
 ## 🟠 P1 — Bug funzionali — Opus 4.8
 - ⬜ **B1** Doppio montaggio mobile+desktop: montare **un solo** layout via

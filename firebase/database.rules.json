@@ -4,15 +4,25 @@
       ".read": "auth != null",
       "$uid": {
         ".write": "auth != null && auth.uid === $uid",
-        ".validate": "newData.hasChildren(['user_id','username','status']) || !newData.exists()"
+        ".validate": "!newData.exists() || (newData.hasChildren(['user_id','username','status']) && newData.child('user_id').val() === $uid)"
       }
     },
     "signals": {
       "$sessionId": {
-        ".read": "auth != null",
-        ".write": "auth != null",
-        "$signalId": {
-          ".validate": "newData.hasChildren(['kind','from'])"
+        ".read": "auth != null && data.child('participants').child(auth.uid).exists()",
+        ".write": "auth != null && (!data.exists() || data.child('participants').child(auth.uid).exists() || newData.child('participants').child(auth.uid).exists())",
+        "participants": {
+          "$uid": {
+            ".validate": "newData.isBoolean() && $uid === auth.uid"
+          }
+        },
+        "msgs": {
+          "$msgId": {
+            ".validate": "newData.hasChildren(['kind','from']) && newData.child('from').val() === auth.uid"
+          }
+        },
+        "$other": {
+          ".validate": false
         }
       }
     }

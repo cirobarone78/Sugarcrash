@@ -14,6 +14,7 @@ import { rtdb } from './firebase'
 import {
   ref,
   push,
+  set,
   onChildAdded,
   remove,
   onDisconnect,
@@ -54,6 +55,8 @@ export function createPeerConnection(): RTCPeerConnection {
  */
 export class SignalingChannel {
   private nodeRef: DatabaseReference
+  private msgsRef: DatabaseReference
+  private selfPartRef: DatabaseReference
   private selfId: string
   private onMessage: (msg: SignalMessage) => void
   private unsub: Unsubscribe | null = null
@@ -66,12 +69,17 @@ export class SignalingChannel {
     this.selfId = selfId
     this.onMessage = onMessage
     this.nodeRef = ref(rtdb, `signals/${sessionId}`)
+    this.msgsRef = ref(rtdb, `signals/${sessionId}/msgs`)
+    this.selfPartRef = ref(rtdb, `signals/${sessionId}/participants/${selfId}`)
   }
 
   async subscribe(): Promise<void> {
+    // Registra sé stesso nell'allowlist dei partecipanti: le Security Rules
+    // consentono lettura/scrittura del nodo solo a chi è elencato qui.
+    await set(this.selfPartRef, true).catch(() => undefined)
     // se la connessione cade, prova comunque a ripulire il nodo
     onDisconnect(this.nodeRef).remove()
-    this.unsub = onChildAdded(this.nodeRef, (snap) => {
+    this.unsub = onChildAdded(this.msgsRef, (snap) => {
       const msg = snap.val() as SignalMessage | null
       if (!msg) return
       if (msg.from === this.selfId) return // ignora i propri messaggi
@@ -80,7 +88,7 @@ export class SignalingChannel {
   }
 
   send(msg: OutgoingSignal): void {
-    void push(this.nodeRef, { ...msg, from: this.selfId })
+    void push(this.msgsRef, { ...msg, from: this.selfId })
   }
 
   async close(): Promise<void> {

@@ -3,6 +3,7 @@ import {
   addDoc,
   collection,
   doc,
+  getDoc,
   onSnapshot,
   orderBy,
   query,
@@ -11,7 +12,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
-import { sha256Hex } from '../lib/hash'
+import { randomSalt, sha256Hex } from '../lib/hash'
 import { tsToMillis } from '../lib/utils'
 import type { Room } from '../lib/types'
 
@@ -75,17 +76,25 @@ export function usePrivateRooms() {
       const cleanName = name.trim()
       if (cleanName.length < 2) return { errorKey: 'rooms.nameTooShort' }
       if (password.length < 3) return { errorKey: 'rooms.pwdTooShort' }
-      const pwd_hash = await sha256Hex(password)
+      const salt = randomSalt()
+      const pwd_hash = await sha256Hex(salt + password)
       try {
         const finalName = cleanName.slice(0, 40)
+        // Il doc principale è leggibile: contiene solo il salt (non segreto),
+        // MAI l'hash della password.
         const ref = await addDoc(collection(db, 'privateRooms'), {
           name: finalName,
           topic: null,
           owner_id: profile.id,
           owner_username: profile.username,
-          pwd_hash,
+          salt,
           allow_images: true,
           created_at: serverTimestamp(),
+        })
+        // L'hash vive in un sottodoc non leggibile dai client (allow read: false):
+        // solo le Security Rules lo confrontano al momento del join.
+        await setDoc(doc(db, 'privateRooms', ref.id, 'secret', 'hash'), {
+          value: pwd_hash,
         })
         // il proprietario è automaticamente membro
         await setDoc(doc(db, 'privateRooms', ref.id, 'members', profile.id), {
@@ -119,7 +128,17 @@ export function usePrivateRooms() {
   const joinRoom = useCallback(
     async (roomId: string, password: string): Promise<{ errorKey?: string }> => {
       if (!profile) return { errorKey: 'common.error' }
-      const pwd_hash = await sha256Hex(password)
+      // Il salt sta nel doc leggibile della stanza; l'hash da confrontare è
+      // sha256(salt + password). L'hash vero non è leggibile: se sbagliamo la
+      // password la regola nega la membership.
+      let salt = ''
+      try {
+        const snap = await getDoc(doc(db, 'privateRooms', roomId))
+        salt = (snap.data()?.salt as string | undefined) ?? ''
+      } catch {
+        return { errorKey: 'rooms.wrongPassword' }
+      }
+      const pwd_hash = await sha256Hex(salt + password)
       try {
         // la regola consente la membership solo se l'hash coincide con quello
         // della stanza → password sbagliata = permesso negato

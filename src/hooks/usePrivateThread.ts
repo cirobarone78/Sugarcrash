@@ -116,6 +116,7 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
         await addDoc(collection(db, 'privateThreads', threadId, 'messages'), {
           sender_id: myId,
           body,
+          message_type: 'text',
           created_at: serverTimestamp(),
         })
         await updateDoc(doc(db, 'privateThreads', threadId), {
@@ -145,6 +146,7 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
         await addDoc(collection(db, 'privateThreads', threadId, 'messages'), {
           sender_id: myId,
           body: '',
+          message_type: 'image',
           image_url: url,
           created_at: serverTimestamp(),
         })

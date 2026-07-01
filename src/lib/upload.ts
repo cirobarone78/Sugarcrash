@@ -4,7 +4,9 @@
 // viene archiviato su un servizio a parte.
 
 const MAX_DIMENSION = 1024 // lato massimo in px
-const MAX_DATAURL_BYTES = 700 * 1024 // ~700 KB (sotto il limite doc Firestore 1MB)
+// Cap del data-URL: deve stare sotto il limite delle Security Rules
+// (image_url.size() <= 210000). Teniamo un margine: 204800 = 200 KB.
+const MAX_DATAURL_BYTES = 200 * 1024
 
 export interface UploadResult {
   url?: string

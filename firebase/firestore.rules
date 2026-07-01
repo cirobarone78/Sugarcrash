@@ -17,6 +17,37 @@ service cloud.firestore {
       return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
 
+    // Profilo del chiamante (per legare i campi denormalizzati all'identità).
+    function callerProfile() {
+      return get(/databases/$(database)/documents/profiles/$(uid())).data;
+    }
+
+    // Allowlist immagine: solo data-URL immagine base64, dimensione limitata.
+    function imageUrlOk(data) {
+      return data.image_url is string
+        && data.image_url.size() <= 210000
+        && data.image_url.matches('^data:image/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$');
+    }
+
+    // Validazione comune dei messaggi (stanze, stanze private, thread privati).
+    // body ≤ 2000; message_type ∈ {text,image}; se image → image_url valido,
+    // se text → image_url assente.
+    function validMessage(data) {
+      return data.body is string
+        && data.body.size() <= 2000
+        && data.message_type in ['text', 'image']
+        && (data.message_type == 'image'
+              ? imageUrlOk(data)
+              : !('image_url' in data));
+    }
+
+    // Lega i campi autore denormalizzati al profilo del chiamante.
+    function authorBound(data) {
+      return data.author_username == callerProfile().username
+        && data.author_avatar_url == callerProfile().avatar_url
+        && data.author_is_guest == callerProfile().is_guest;
+    }
+
     function threadParticipants(threadId) {
       return get(/databases/$(database)/documents/privateThreads/$(threadId)).data.participants;
     }
@@ -57,8 +88,8 @@ service cloud.firestore {
         allow read: if signedIn();
         allow create: if signedIn()
           && request.resource.data.user_id == uid()
-          && request.resource.data.body is string
-          && request.resource.data.body.size() <= 2000;
+          && validMessage(request.resource.data)
+          && authorBound(request.resource.data);
         allow update, delete: if false;
       }
     }
@@ -84,16 +115,21 @@ service cloud.firestore {
         allow create: if isRegistered()
           && request.resource.data.sender_id == uid()
           && uid() in threadParticipants(threadId)
-          && request.resource.data.body is string
-          && request.resource.data.body.size() <= 2000
+          && validMessage(request.resource.data)
           && !blockedByCurrent(otherParticipant(threadId));
         allow update, delete: if false;
       }
     }
 
-    // stanze private (create dagli utenti, password "soft" via hash)
+    // stanze private (create dagli utenti, password "soft" via hash salato).
+    // L'hash NON sta nel doc leggibile: vive in privateRooms/{id}/secret/hash
+    // (allow read: false; le rules possono leggerlo con get()). Il doc principale
+    // espone solo il `salt` (non segreto).
     function roomPwdHash(roomId) {
-      return get(/databases/$(database)/documents/privateRooms/$(roomId)).data.pwd_hash;
+      return get(/databases/$(database)/documents/privateRooms/$(roomId)/secret/hash).data.value;
+    }
+    function roomOwner(roomId) {
+      return get(/databases/$(database)/documents/privateRooms/$(roomId)).data.owner_id;
     }
     function isRoomMember(roomId) {
       return exists(/databases/$(database)/documents/privateRooms/$(roomId)/members/$(uid()));
@@ -102,6 +138,15 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if isRegistered() && request.resource.data.owner_id == uid();
       allow update, delete: if signedIn() && resource.data.owner_id == uid();
+
+      // segreto password: mai leggibile dai client, scrivibile solo dall'owner
+      match /secret/{docId} {
+        allow read: if false;
+        allow create, update: if isRegistered()
+          && roomOwner(roomId) == uid()
+          && request.resource.data.value is string;
+        allow delete: if signedIn() && roomOwner(roomId) == uid();
+      }
 
       // membership: entri solo fornendo l'hash corretto della password
       match /members/{userId} {
@@ -118,8 +163,8 @@ service cloud.firestore {
         allow create: if signedIn()
           && isRoomMember(roomId)
           && request.resource.data.user_id == uid()
-          && request.resource.data.body is string
-          && request.resource.data.body.size() <= 2000;
+          && validMessage(request.resource.data)
+          && authorBound(request.resource.data);
         allow update, delete: if false;
       }
     }

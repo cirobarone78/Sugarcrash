@@ -31,6 +31,16 @@ export function validateUsername(name: string): string | null {
   return null
 }
 
+// Allowlist immagine identica a quella delle Security Rules: solo data-URL
+// immagine base64 (png/jpeg/webp/gif), niente `javascript:`, `data:text/html`,
+// URL http remoti, ecc. Difesa in profondità contro XSS memorizzato/DoS.
+const SAFE_IMAGE_DATA_URL = /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/
+
+/** True se `url` è un data-URL immagine sicuro da renderizzare. */
+export function isSafeImageDataUrl(url: unknown): url is string {
+  return typeof url === 'string' && url.length <= 210000 && SAFE_IMAGE_DATA_URL.test(url)
+}
+
 /** Coppia ordinata (a,b) per i thread privati: user_a è sempre l'id minore. */
 export function orderedPair(id1: string, id2: string): [string, string] {
   return id1 < id2 ? [id1, id2] : [id2, id1]
