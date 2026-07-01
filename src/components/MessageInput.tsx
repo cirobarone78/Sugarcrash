@@ -59,18 +59,33 @@ export function MessageInput({ onSend, onSendImage, placeholder, disabled }: Mes
   const busy = disabled || uploading
 
   return (
-    <div className="border-t border-ink-700 bg-ink-900 p-2">
-      {error && <p className="px-2 pb-1 text-xs text-accent-red">{error}</p>}
-      <div className="relative flex items-end gap-2">
+    <div className="border-t border-white/[0.06] bg-ink-900 p-3">
+      {error && <p className="px-2 pb-1.5 text-xs text-accent-red">{error}</p>}
+      <div className="relative flex items-center gap-2 rounded-full border border-ink-700 bg-ink-850 py-1.5 pl-4 pr-1.5">
         <button
           type="button"
           onClick={() => setEmojiOpen((v) => !v)}
-          className="icon-btn"
+          className="shrink-0 text-ink-400 transition-colors hover:text-accent-yellow"
           aria-label="Emoji"
           disabled={busy}
         >
-          <Icon name="smile" size={18} />
+          <Icon name="smile" size={22} />
         </button>
+        <EmojiPicker
+          open={emojiOpen}
+          onClose={() => setEmojiOpen(false)}
+          onPick={(emoji) => setValue((v) => v + emoji)}
+        />
+        <textarea
+          rows={1}
+          className="max-h-32 flex-1 resize-none border-0 bg-transparent py-1.5 text-sm text-ink-200 outline-none placeholder:text-ink-400"
+          placeholder={uploading ? t('chat.uploading') : placeholder ?? t('chat.placeholder')}
+          value={value}
+          maxLength={MAX_MESSAGE_LENGTH}
+          disabled={busy}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={onKeyDown}
+        />
         {onSendImage && (
           <>
             <input
@@ -83,38 +98,23 @@ export function MessageInput({ onSend, onSendImage, placeholder, disabled }: Mes
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="icon-btn"
+              className="fab h-9 w-9 shrink-0 bg-cyan-400 hover:brightness-110"
               aria-label={t('chat.attachImage')}
               title={t('chat.attachImage')}
               disabled={busy}
             >
-              <Icon name="image" size={18} />
+              <Icon name="image" size={17} />
             </button>
           </>
         )}
-        <EmojiPicker
-          open={emojiOpen}
-          onClose={() => setEmojiOpen(false)}
-          onPick={(emoji) => setValue((v) => v + emoji)}
-        />
-        <textarea
-          rows={1}
-          className="input max-h-32 flex-1 resize-none py-2.5"
-          placeholder={uploading ? t('chat.uploading') : placeholder ?? t('chat.placeholder')}
-          value={value}
-          maxLength={MAX_MESSAGE_LENGTH}
-          disabled={busy}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={onKeyDown}
-        />
         <button
           type="button"
           onClick={submit}
           disabled={busy || !value.trim()}
-          className="btn-primary h-10 px-3.5"
+          className="fab h-9 w-9 shrink-0 bg-accent-green hover:brightness-110 disabled:opacity-40"
           aria-label={t('common.send')}
         >
-          <Icon name="send" size={18} />
+          <Icon name="send" size={17} />
         </button>
       </div>
     </div>

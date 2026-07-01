@@ -63,13 +63,13 @@ export function ChatLayout() {
       <header className="flex items-center justify-between border-b border-white/[0.06] bg-ink-900/70 px-3 py-2 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <Logo size={28} />
-          <span className="font-display font-bold text-white">RetroCam</span>
+          <span className="text-[15px] font-bold tracking-tight text-white">RetroCam</span>
         </div>
         <div className="flex items-center gap-1.5">
           {isGuest && (
             <button
               onClick={() => setSettingsOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-gradient px-3 py-1.5 text-xs font-semibold text-white shadow-glow hover:brightness-110"
+              className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-glow hover:bg-brand-400"
               title={t('header.register')}
             >
               <Icon name="sparkle" size={14} />
@@ -94,7 +94,7 @@ export function ChatLayout() {
             title={t('header.settings')}
           >
             {profile && (
-              <Avatar username={profile.username} avatarUrl={profile.avatar_url} status={profile.status} size={28} showStatus />
+              <Avatar username={profile.username} avatarUrl={profile.avatar_url} status={profile.status} size={28} showStatus ring />
             )}
             <span className="hidden text-sm text-ink-200 sm:inline">{profile?.username}</span>
             <span className="h-2 w-2 rounded-full sm:hidden" style={{ background: profile ? statusColor[profile.status] : '#666' }} />

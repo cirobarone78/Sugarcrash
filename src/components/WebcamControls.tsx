@@ -33,30 +33,34 @@ export function WebcamControls({
   const { t } = useI18n()
   const elapsed = useElapsed()
   return (
-    <div className="flex items-center justify-between gap-2 rounded-xl bg-ink-850/80 p-2">
+    <div className="flex items-center justify-between gap-3">
       <span className="chip bg-ink-800 font-mono tabular-nums text-ink-200" title={t('cam.duration')}>
         {formatDuration(elapsed)}
       </span>
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2.5 rounded-full bg-ink-950/80 px-3 py-2 shadow-pill backdrop-blur">
         {hasAudio && (
           <button
             onClick={onToggleMic}
-            className={`icon-btn ${audioEnabled ? 'text-white' : 'text-ink-400'}`}
+            className={`fab ${audioEnabled ? 'bg-cyan-400' : 'bg-ink-700'}`}
             title={audioEnabled ? t('cam.micOn') : t('cam.micOff')}
           >
-            <Icon name={audioEnabled ? 'mic' : 'micOff'} size={18} />
+            <Icon name={audioEnabled ? 'mic' : 'micOff'} size={19} />
           </button>
         )}
         <button
           onClick={onToggleVideo}
-          className={`icon-btn ${videoEnabled ? 'text-white' : 'text-ink-400'}`}
+          className={`fab ${videoEnabled ? 'bg-accent-orange' : 'bg-ink-700'}`}
           title={videoEnabled ? t('cam.videoToggleOff') : t('cam.videoToggleOn')}
         >
-          <Icon name={videoEnabled ? 'video' : 'videoOff'} size={18} />
+          <Icon name={videoEnabled ? 'video' : 'videoOff'} size={19} />
         </button>
-        <button onClick={onClose} className="btn-danger" title={t('cam.closeCam')}>
-          <Icon name="stop" size={16} />
-          {t('cam.closeCam')}
+        <button
+          onClick={onClose}
+          className="fab bg-accent-red hover:brightness-110"
+          title={t('cam.closeCam')}
+          aria-label={t('cam.closeCam')}
+        >
+          <Icon name="stop" size={18} />
         </button>
       </div>
     </div>

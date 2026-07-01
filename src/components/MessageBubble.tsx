@@ -55,10 +55,10 @@ export function MessageBubble({ message, isOwn, onAuthorClick, onReport }: Messa
           </a>
         ) : (
           <div
-            className={`whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm ${
+            className={`whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-sm shadow-sm ${
               isOwn
-                ? 'rounded-tr-sm bg-brand-600 text-white'
-                : 'rounded-tl-sm bg-ink-800 text-ink-200'
+                ? 'rounded-br-md bg-brand-500 text-white'
+                : 'rounded-bl-md bg-teal-600 text-white'
             }`}
           >
             {message.body}

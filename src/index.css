@@ -14,13 +14,9 @@ body,
 
 body {
   margin: 0;
-  background: #0a0a12;
-  background-image: radial-gradient(60% 50% at 15% 0%, rgba(124, 84, 246, 0.16), transparent 60%),
-    radial-gradient(50% 45% at 100% 8%, rgba(34, 211, 238, 0.1), transparent 55%);
-  background-attachment: fixed;
-  color: #e7e7f5;
+  background: #0b1120;
+  color: #eaf0fb;
   font-family: Inter, system-ui, -apple-system, sans-serif;
-  font-feature-settings: 'cv11', 'ss01';
   -webkit-font-smoothing: antialiased;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
     env(safe-area-inset-left);
@@ -30,45 +26,51 @@ body {
 h1,
 h2,
 h3 {
-  font-family: 'Space Grotesk', system-ui, sans-serif;
   letter-spacing: -0.01em;
 }
 
 /* Scrollbar discreta */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #373750 transparent;
+  scrollbar-color: #2a3860 transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #2c2c40;
+  background: #24304e;
   border-radius: 999px;
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold transition-all duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-brand-gradient text-white shadow-glow hover:brightness-110;
+    @apply btn bg-brand-500 text-white shadow-glow hover:bg-brand-400;
   }
   .btn-ghost {
-    @apply btn border border-ink-700 bg-ink-800/70 text-ink-200 hover:border-ink-600 hover:bg-ink-700/70;
+    @apply btn bg-ink-800 text-ink-200 hover:bg-ink-700;
   }
   .btn-danger {
     @apply btn bg-accent-red text-white hover:brightness-110;
   }
+  /* Bottone azione circolare colorato (stile "AURA": mic/cam/send…) */
+  .fab {
+    @apply inline-flex h-11 w-11 items-center justify-center rounded-full text-white shadow-pill transition-transform active:scale-90;
+  }
   .icon-btn {
-    @apply inline-flex h-10 w-10 items-center justify-center rounded-xl border border-ink-700 bg-ink-800/60 text-ink-200 transition-colors hover:border-ink-600 hover:bg-ink-700/70 disabled:opacity-40;
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-full bg-ink-800 text-ink-200 transition-colors hover:bg-ink-700 disabled:opacity-40;
   }
   .input {
-    @apply w-full rounded-xl border border-ink-700 bg-ink-900/70 px-3.5 py-2.5 text-sm text-ink-200 outline-none transition-colors placeholder:text-ink-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30;
+    @apply w-full rounded-xl border border-ink-700 bg-ink-900 px-3.5 py-2.5 text-sm text-ink-200 outline-none transition-colors placeholder:text-ink-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25;
   }
   .card {
-    @apply rounded-2xl border border-white/[0.06] bg-ink-850/80 backdrop-blur-xl;
+    @apply rounded-2xl border border-white/[0.06] bg-ink-850;
+  }
+  .panel {
+    @apply bg-ink-900;
   }
   .chip {
     @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;

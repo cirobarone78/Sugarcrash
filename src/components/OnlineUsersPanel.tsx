@@ -42,6 +42,7 @@ export function OnlineUsersPanel({ roomSlug }: OnlineUsersPanelProps) {
               status={u.status}
               size={32}
               showStatus
+              ring
             />
             <span className="flex min-w-0 flex-col">
               <span className="truncate text-sm font-semibold text-ink-200">

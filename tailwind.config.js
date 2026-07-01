@@ -4,57 +4,63 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Palette "midnight aurora": fondali profondi + accento viola→ciano.
+        // Blu primario (bolle in uscita, azioni)
         brand: {
-          50: '#f3f1ff',
-          100: '#e9e5ff',
-          200: '#d6ccff',
-          300: '#b8a6ff',
-          400: '#9a7dff',
-          500: '#7c54f6',
-          600: '#6a3def',
-          700: '#5a2fd6',
-          800: '#4a27ad',
-          900: '#3d2389',
+          50: '#eff5ff',
+          100: '#dbe8ff',
+          200: '#bcd4ff',
+          300: '#93b8ff',
+          400: '#5b9bff',
+          500: '#3b82f6',
+          600: '#2f6fe0',
+          700: '#2a5fc0',
+          800: '#274f9c',
+          900: '#1e3a8a',
+        },
+        // Verde-acqua (bolle in arrivo, accento amichevole)
+        teal: {
+          300: '#5eead4',
+          400: '#2dd4bf',
+          500: '#14b8a6',
+          600: '#0f9e8f',
+        },
+        // Fondali navy morbidi (nome "ink" mantenuto per compatibilità)
+        ink: {
+          950: '#0b1120',
+          900: '#0f1728',
+          850: '#16203a',
+          800: '#1e2a48',
+          700: '#2a3860',
+          600: '#3a4a72',
+          400: '#8092b8',
+          200: '#ccd4e6',
         },
         cyan: {
-          400: '#22d3ee',
-          500: '#06b6d4',
-        },
-        ink: {
-          950: '#0a0a12',
-          900: '#0f0f1a',
-          850: '#15151f',
-          800: '#1c1c2a',
-          700: '#272739',
-          600: '#373750',
-          400: '#6c6c8a',
-          200: '#b4b4cf',
+          400: '#22c6e0',
+          500: '#0ea5c4',
         },
         accent: {
-          green: '#34d399',
-          amber: '#fbbf24',
-          red: '#fb5a6a',
+          green: '#22c55e',
+          amber: '#f59e0b',
+          orange: '#f59e0b',
+          yellow: '#facc15',
+          red: '#f0475b',
         },
       },
       fontFamily: {
-        display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+        display: ['Inter', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       boxShadow: {
-        glow: '0 0 0 1px rgba(124,84,246,0.25), 0 8px 30px -8px rgba(124,84,246,0.45)',
-        soft: '0 10px 40px -12px rgba(0,0,0,0.6)',
-      },
-      backgroundImage: {
-        'brand-gradient': 'linear-gradient(135deg, #7c54f6 0%, #22d3ee 100%)',
-        aurora:
-          'radial-gradient(60% 50% at 15% 0%, rgba(124,84,246,0.18), transparent 60%), radial-gradient(50% 45% at 100% 10%, rgba(34,211,238,0.12), transparent 55%)',
+        glow: '0 8px 26px -10px rgba(59,130,246,0.55)',
+        soft: '0 14px 44px -16px rgba(0,0,0,0.7)',
+        pill: '0 10px 30px -6px rgba(0,0,0,0.55)',
       },
       keyframes: {
         'pulse-ring': {
-          '0%': { boxShadow: '0 0 0 0 rgba(251,90,106,0.5)' },
-          '70%': { boxShadow: '0 0 0 9px rgba(251,90,106,0)' },
-          '100%': { boxShadow: '0 0 0 0 rgba(251,90,106,0)' },
+          '0%': { boxShadow: '0 0 0 0 rgba(240,71,91,0.5)' },
+          '70%': { boxShadow: '0 0 0 9px rgba(240,71,91,0)' },
+          '100%': { boxShadow: '0 0 0 0 rgba(240,71,91,0)' },
         },
         'slide-up': {
           '0%': { transform: 'translateY(14px)', opacity: '0' },

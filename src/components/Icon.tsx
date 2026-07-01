@@ -191,14 +191,14 @@ export function Logo({ size = 28 }: { size?: number }) {
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden="true">
       <defs>
         <linearGradient id="rc-logo" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#a78bfa" />
-          <stop offset="1" stopColor="#22d3ee" />
+          <stop offset="0" stopColor="#3b82f6" />
+          <stop offset="1" stopColor="#2dd4bf" />
         </linearGradient>
       </defs>
       <rect x="2" y="2" width="28" height="28" rx="9" fill="url(#rc-logo)" />
-      <circle cx="16" cy="16" r="6.5" fill="#0f0f17" />
+      <circle cx="16" cy="16" r="6.5" fill="#0b1120" />
       <circle cx="16" cy="16" r="3" fill="url(#rc-logo)" />
-      <circle cx="22.5" cy="9.5" r="1.6" fill="#0f0f17" />
+      <circle cx="22.5" cy="9.5" r="1.6" fill="#0b1120" />
     </svg>
   )
 }

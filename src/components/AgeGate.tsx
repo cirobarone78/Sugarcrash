@@ -12,7 +12,7 @@ export function AgeGate({ onConfirm }: AgeGateProps) {
     <div className="flex min-h-full items-center justify-center p-4">
       <div className="card w-full max-w-md space-y-4 p-6">
         <div className="flex items-center justify-between">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-gradient text-white shadow-glow">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-500 text-white shadow-glow">
             <Icon name="shield" size={24} />
           </div>
           <LanguageSwitcher />

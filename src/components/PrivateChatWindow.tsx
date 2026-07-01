@@ -52,7 +52,7 @@ export function PrivateChatWindow({ onBack, headerActions, webcamArea }: Private
           onClick={() => openUserProfile(other.id)}
           className="flex min-w-0 flex-1 items-center gap-2"
         >
-          <Avatar username={other.username} avatarUrl={other.avatar_url} status={other.status} size={32} showStatus />
+          <Avatar username={other.username} avatarUrl={other.avatar_url} status={other.status} size={32} showStatus ring />
           <span className="truncate font-semibold text-ink-200">{other.username}</span>
         </button>
         <div className="flex items-center gap-1">
@@ -102,8 +102,8 @@ export function PrivateChatWindow({ onBack, headerActions, webcamArea }: Private
                 </div>
               ) : (
                 <div
-                  className={`max-w-[80%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm ${
-                    isOwn ? 'rounded-tr-sm bg-brand-600 text-white' : 'rounded-tl-sm bg-ink-800 text-ink-200'
+                  className={`max-w-[80%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-sm shadow-sm ${
+                    isOwn ? 'rounded-br-md bg-brand-500 text-white' : 'rounded-bl-md bg-teal-600 text-white'
                   }`}
                 >
                   {m.body}
