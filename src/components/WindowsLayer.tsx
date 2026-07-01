@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { useUI } from '../context/UIContext'
 import { useI18n } from '../lib/i18n'
 import { FloatingWindow } from './FloatingWindow'
+import { MobilePrivateChats } from './MobilePrivateChats'
 import { ChatWindowContent } from './ChatWindowContent'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
@@ -123,7 +124,12 @@ export function WindowsLayer() {
   const gIn = geom['cam-in']
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-30">
+    <>
+    {/* Mobile: una pagina per chat con schede per switchare */}
+    <MobilePrivateChats />
+
+    {/* Desktop/tablet: finestre mobili flottanti sopra la chat di gruppo */}
+    <div className="pointer-events-none fixed inset-0 z-30 hidden lg:block">
       {/* Errore webcam globale */}
       {error && (
         <div className="pointer-events-auto fixed left-1/2 top-3 z-[60] flex max-w-[92vw] -translate-x-1/2 items-center gap-2 rounded-full bg-accent-red/90 px-4 py-2 text-sm text-white shadow-pill">
@@ -347,5 +353,6 @@ export function WindowsLayer() {
         </div>
       )}
     </div>
+    </>
   )
 }

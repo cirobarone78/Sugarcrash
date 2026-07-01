@@ -59,7 +59,7 @@ export function MessageInput({ onSend, onSendImage, placeholder, disabled }: Mes
   const busy = disabled || uploading
 
   return (
-    <div className="border-t border-white/[0.06] bg-ink-900 p-3">
+    <div className="shrink-0 border-t border-white/[0.06] bg-ink-900 p-3">
       {error && <p className="px-2 pb-1.5 text-xs text-accent-red">{error}</p>}
       <div className="relative flex items-center gap-2 rounded-full border border-ink-700 bg-ink-850 py-1.5 pl-4 pr-1.5">
         <button
