@@ -13,7 +13,6 @@ import {
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { sanitizeMessage, orderedPair, tsToMillis } from '../lib/utils'
-import { playMessageSound } from '../lib/sounds'
 import { useI18n } from '../lib/i18n'
 import type { PrivateMessage } from '../lib/types'
 
@@ -26,16 +25,34 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
   const { t } = useI18n()
   const [allMessages, setAllMessages] = useState<PrivateMessage[]>([])
   const [clearedAt, setClearedAt] = useState(0)
-  const initialized = useRef(false)
   const sendTimes = useRef<number[]>([])
   const lastBody = useRef('')
   const myId = profile?.id ?? null
 
+  // Ref sempre aggiornata a fuoco/visibilità così markRead resta stabile.
+  const focusedRef = useRef(focused)
+  focusedRef.current = focused
+  // created_at dell'ultimo messaggio noto e ultimo valore già segnato "letto":
+  // servono a evitare riscritture inutili (write amplification).
+  const latestAtRef = useRef(0)
+  const lastReadAtRef = useRef(0)
+
+  // B3: segna "letto" SOLO se la finestra è a fuoco (non minimizzata) e la scheda
+  // è visibile; salta la scrittura se abbiamo già segnato letto fino all'ultimo
+  // messaggio. B6: scrive serverTimestamp() per coerenza con last_at.
   const markRead = useCallback(async () => {
     if (!myId) return
+    if (!focusedRef.current) return
+    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
+    const latest = latestAtRef.current
+    if (latest === 0 || latest <= lastReadAtRef.current) return
+    lastReadAtRef.current = latest
     await updateDoc(doc(db, 'privateThreads', threadId), {
-      [`reads.${myId}`]: Date.now(),
-    }).catch(() => undefined)
+      [`reads.${myId}`]: serverTimestamp(),
+    }).catch(() => {
+      // in caso di errore, riprova al prossimo trigger
+      lastReadAtRef.current = 0
+    })
   }, [myId, threadId])
 
   const ensureThread = useCallback(async () => {
@@ -49,37 +66,32 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
   }, [myId, otherId, threadId])
 
   useEffect(() => {
-    initialized.current = false
+    latestAtRef.current = 0
+    lastReadAtRef.current = 0
     const q = query(
       collection(db, 'privateThreads', threadId, 'messages'),
       orderBy('created_at'),
     )
     const unsub = onSnapshot(q, (snap) => {
-      setAllMessages(
-        snap.docs.map((d) => {
-          const data = d.data()
-          return {
-            id: d.id,
-            thread_id: threadId,
-            sender_id: (data.sender_id as string) ?? '',
-            body: (data.body as string) ?? '',
-            image_url: (data.image_url as string | null) ?? null,
-            created_at: tsToMillis(data.created_at),
-            read_at: null,
-          }
-        }),
-      )
-      if (initialized.current) {
-        for (const c of snap.docChanges()) {
-          if (c.type === 'added' && c.doc.data().sender_id !== myId) {
-            playMessageSound()
-            void markRead()
-          }
+      const mapped = snap.docs.map((d) => {
+        const data = d.data()
+        return {
+          id: d.id,
+          thread_id: threadId,
+          sender_id: (data.sender_id as string) ?? '',
+          body: (data.body as string) ?? '',
+          image_url: (data.image_url as string | null) ?? null,
+          created_at: tsToMillis(data.created_at),
+          read_at: null,
         }
-      }
-      initialized.current = true
+      })
+      setAllMessages(mapped)
+      latestAtRef.current = mapped.length ? mapped[mapped.length - 1].created_at : 0
+      // segna letto all'ingresso e ad ogni nuovo messaggio; markRead gestisce le
+      // condizioni (a fuoco + visibile) e la deduplica. Il SUONO NON è più qui:
+      // è gestito da <PrivateNotifier> (unica sorgente, vedi B2).
+      void markRead()
     })
-    void markRead()
     return () => unsub()
   }, [threadId, myId, markRead])
 
@@ -87,8 +99,8 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
   useEffect(() => {
     if (!myId) return
     const unsub = onSnapshot(doc(db, 'privateThreads', threadId), (snap) => {
-      const c = snap.data()?.cleared as Record<string, number> | undefined
-      setClearedAt(c?.[myId] ?? 0)
+      const c = snap.data()?.cleared as Record<string, unknown> | undefined
+      setClearedAt(c?.[myId] != null ? tsToMillis(c[myId]) : 0)
     })
     return () => unsub()
   }, [threadId, myId])
@@ -101,6 +113,16 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
   useEffect(() => {
     if (focused) void markRead()
   }, [focused, messages.length, markRead])
+
+  // Aprendo/mostrando la scheda mentre la chat è visibile, segna letto.
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const onVis = () => {
+      if (document.visibilityState === 'visible') void markRead()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [markRead])
 
   const send = useCallback(
     async (raw: string): Promise<{ error: string | null }> => {
@@ -123,7 +145,7 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
           last_body: body,
           last_at: serverTimestamp(),
           last_sender: myId,
-          [`reads.${myId}`]: Date.now(),
+          [`reads.${myId}`]: serverTimestamp(),
         })
       } catch {
         return { error: t('pm.cantSend') }
@@ -154,7 +176,7 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
           last_body: t('chat.photo'),
           last_at: serverTimestamp(),
           last_sender: myId,
-          [`reads.${myId}`]: Date.now(),
+          [`reads.${myId}`]: serverTimestamp(),
         })
       } catch {
         return { error: t('pm.cantSend') }

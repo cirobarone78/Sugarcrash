@@ -103,6 +103,10 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
   const outPeer = useRef<WebcamPeer | null>(null)
   const inPeer = useRef<WebcamPeer | null>(null)
   const lastInviteAt = useRef<number>(0)
+  // Traccia se l'invito uscente è stato accettato: se termino PRIMA
+  // dell'accettazione scrivo 'cancelled' (così l'invito non resta "fantasma"
+  // dal lato viewer). Vedi B5.
+  const outgoingAcceptedRef = useRef(false)
   const outgoingIdRef = useRef<string | null>(null)
   const incomingIdRef = useRef<string | null>(null)
   const pendingRef = useRef<string | null>(null)
@@ -144,10 +148,14 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
 
   const endOutgoing = useCallback(async () => {
     const sessionId = outgoingIdRef.current
+    // B5: se non è mai stato accettato, marca 'cancelled' (invito annullato);
+    // altrimenti 'ended' (sessione conclusa).
+    const status = outgoingAcceptedRef.current ? 'ended' : 'cancelled'
+    outgoingAcceptedRef.current = false
     await teardownOutgoing()
     if (sessionId) {
       await updateDoc(doc(db, 'webcamSessions', sessionId), {
-        status: 'ended',
+        status,
         ended_at: serverTimestamp(),
       }).catch(() => undefined)
     }
@@ -234,6 +242,7 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
         return
       }
       lastInviteAt.current = now
+      outgoingAcceptedRef.current = false
 
       const session: WebcamSession = {
         id: sessionId,
@@ -339,6 +348,9 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
 
         if (change.type === 'added' && s.viewer_id === myId && s.status === 'pending') {
           if (pendingRef.current === s.id) continue
+          // B5: ignora inviti "stale" (> 60s): al reload lo snapshot iniziale
+          // riporta come 'added' anche i pending vecchi, che non vanno ri-mostrati.
+          if (Date.now() - s.created_at > 60000) continue
           getDoc(doc(db, 'profiles', s.broadcaster_id)).then((p) => {
             setPendingInvite({
               session: s,
@@ -349,7 +361,9 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
         }
 
         if (outgoingIdRef.current === s.id) {
-          if (s.status === 'declined') {
+          if (s.status === 'accepted') {
+            outgoingAcceptedRef.current = true
+          } else if (s.status === 'declined') {
             setError(t('cam.declined'))
             void teardownOutgoing()
           } else if (s.status === 'ended' || s.status === 'cancelled') {

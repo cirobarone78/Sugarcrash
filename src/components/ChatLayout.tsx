@@ -4,6 +4,7 @@ import { usePrivateRooms } from '../hooks/usePrivateRooms'
 import { useAuth } from '../context/AuthContext'
 import { usePrivateChat } from '../context/PrivateChatContext'
 import { useWindows } from '../context/WindowsContext'
+import { useIsDesktop } from '../hooks/useIsDesktop'
 import { RoomList } from './RoomList'
 import { LobbyPage } from './LobbyPage'
 import { RoomChat } from './RoomChat'
@@ -25,6 +26,7 @@ export function ChatLayout() {
   const { profile, isGuest } = useAuth()
   const { totalUnread } = usePrivateChat()
   const { openMessages } = useWindows()
+  const isDesktop = useIsDesktop()
   const { t } = useI18n()
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -108,7 +110,8 @@ export function ChatLayout() {
         <div className="overflow-y-auto border-r border-ink-700 bg-ink-900">
           <RoomList rooms={rooms} selectedRoomId={selectedRoom?.id ?? null} onSelect={selectRoom} />
         </div>
-        <div className="min-w-0 bg-ink-950">{center}</div>
+        {/* B1: `center` (RoomChat/useRoomMessages) montato UNA sola volta. */}
+        <div className="min-w-0 bg-ink-950">{isDesktop ? center : null}</div>
         <div className="overflow-hidden border-l border-ink-700 bg-ink-900">
           <OnlineUsersPanel roomSlug={selectedRoom?.slug ?? null} />
         </div>
@@ -121,7 +124,7 @@ export function ChatLayout() {
             <RoomList rooms={rooms} selectedRoomId={selectedRoom?.id ?? null} onSelect={selectRoom} />
           </div>
         )}
-        {tab === 'chat' && <div className="h-full bg-ink-950">{center}</div>}
+        {tab === 'chat' && !isDesktop && <div className="h-full bg-ink-950">{center}</div>}
         {tab === 'users' && (
           <div className="h-full bg-ink-900">
             <OnlineUsersPanel roomSlug={selectedRoom?.slug ?? null} />

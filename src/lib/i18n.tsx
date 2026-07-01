@@ -270,6 +270,8 @@ const dict: Record<Lang, Record<string, string>> = {
     'cam.err.noDevice': 'No camera available on this device.',
     'cam.err.generic': 'Unable to access the webcam.',
     'cam.err.invite': 'Unable to send the invite (the user may have blocked you).',
+    'cam.broadcasting': 'Your camera is on',
+    'cam.stop': 'Stop',
 
     // config notice
     'config.title': '⚙️ Configuration required',
@@ -516,6 +518,8 @@ const dict: Record<Lang, Record<string, string>> = {
     'cam.err.noDevice': 'Nessuna fotocamera disponibile su questo dispositivo.',
     'cam.err.generic': 'Impossibile accedere alla webcam.',
     'cam.err.invite': "Impossibile inviare l'invito (l'utente potrebbe averti bloccato).",
+    'cam.broadcasting': 'La tua webcam è attiva',
+    'cam.stop': 'Ferma',
 
     'config.title': '⚙️ Configurazione necessaria',
     'config.body':

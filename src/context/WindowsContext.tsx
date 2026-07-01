@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -120,6 +121,34 @@ export function WindowsProvider({ children }: { children: ReactNode }) {
       delete next[id]
       return next
     })
+  }, [])
+
+  // B8: al ridimensionamento/rotazione del viewport ri-vincola ogni finestra
+  // dentro lo schermo, così non resta "incagliata" fuori vista (stessi limiti
+  // usati durante il drag in FloatingWindow).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onResize = () => {
+      setGeom((g) => {
+        const maxX = Math.max(0, window.innerWidth - 60)
+        const maxY = Math.max(0, window.innerHeight - 48)
+        let changed = false
+        const next: Record<string, WinGeom> = {}
+        for (const [id, w] of Object.entries(g)) {
+          const nx = Math.min(Math.max(0, w.x), maxX)
+          const ny = Math.min(Math.max(0, w.y), maxY)
+          if (nx !== w.x || ny !== w.y) {
+            changed = true
+            next[id] = { ...w, x: nx, y: ny }
+          } else {
+            next[id] = w
+          }
+        }
+        return changed ? next : g
+      })
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
   }, [])
 
   const openChat = useCallback(

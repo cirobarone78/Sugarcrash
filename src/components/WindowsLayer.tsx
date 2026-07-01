@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useIsDesktop } from '../hooks/useIsDesktop'
 import { useWindows, type WinOther } from '../context/WindowsContext'
 import { useWebcam } from '../context/WebcamContext'
 import { usePrivateChat } from '../context/PrivateChatContext'
@@ -19,6 +20,7 @@ import { formatTime } from '../lib/utils'
 
 /** Livello che disegna tutte le finestre mobili (chat, webcam, messaggi) + dock. */
 export function WindowsLayer() {
+  const isDesktop = useIsDesktop()
   const { profile } = useAuth()
   const { onlineUsers } = usePresence()
   const { openUserProfile, openBlock, openReport } = useUI()
@@ -131,11 +133,30 @@ export function WindowsLayer() {
 
   return (
     <>
-    {/* Mobile: una pagina per chat con schede per switchare */}
-    <MobilePrivateChats />
+    {/* B4: indicatore globale "webcam attiva" — sempre visibile finché trasmetti,
+        indipendente dalla scheda/chat aperta, con Stop immediato (privacy). */}
+    {outgoing && (
+      <div className="pointer-events-auto fixed left-1/2 top-3 z-[80] flex max-w-[94vw] -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-ink-850/95 py-1.5 pl-3 pr-1.5 shadow-pill backdrop-blur">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-accent-red" />
+        <Icon name="video" size={15} className="text-accent-orange" />
+        <span className="truncate text-xs font-semibold text-ink-200">{t('cam.broadcasting')}</span>
+        <button
+          onClick={() => void endOutgoing()}
+          className="flex items-center gap-1 rounded-full bg-accent-red px-2.5 py-1 text-xs font-semibold text-white hover:brightness-110"
+        >
+          <Icon name="stop" size={13} />
+          {t('cam.stop')}
+        </button>
+      </div>
+    )}
+
+    {/* B1: monta UN SOLO layout per volta (breakpoint JS) per evitare doppie
+        subscription/suoni. Mobile: una pagina per chat con schede. */}
+    {!isDesktop && <MobilePrivateChats />}
 
     {/* Desktop/tablet: finestre mobili flottanti sopra la chat di gruppo */}
-    <div className="pointer-events-none fixed inset-0 z-30 hidden lg:block">
+    {isDesktop && (
+    <div className="pointer-events-none fixed inset-0 z-30">
       {/* Errore webcam globale */}
       {error && (
         <div className="pointer-events-auto fixed left-1/2 top-3 z-[60] flex max-w-[92vw] -translate-x-1/2 items-center gap-2 rounded-full bg-accent-red/90 px-4 py-2 text-sm text-white shadow-pill">
@@ -377,6 +398,7 @@ export function WindowsLayer() {
         </div>
       )}
     </div>
+    )}
     </>
   )
 }

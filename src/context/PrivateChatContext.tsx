@@ -9,25 +9,19 @@ import {
   type ReactNode,
 } from 'react'
 import {
-  addDoc,
   collection,
   doc,
   getDoc,
   onSnapshot,
-  orderBy,
   query,
   serverTimestamp,
-  setDoc,
   updateDoc,
   where,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from './AuthContext'
-import { usePresence } from './PresenceContext'
-import { sanitizeMessage, orderedPair, tsToMillis } from '../lib/utils'
-import { playMessageSound } from '../lib/sounds'
-import { useI18n } from '../lib/i18n'
-import type { PrivateMessage, UserStatus } from '../lib/types'
+import { tsToMillis } from '../lib/utils'
+import type { UserStatus } from '../lib/types'
 
 interface OtherLite {
   id: string
@@ -41,6 +35,8 @@ export interface ThreadView {
   other: OtherLite
   lastBody: string | null
   lastAt: number | null
+  /** Autore dell'ultimo messaggio (serve al notifier per distinguere i propri). */
+  lastSender: string | null
   unread: number
 }
 
@@ -51,59 +47,25 @@ interface ThreadDoc {
   last_body?: string | null
   last_at?: unknown
   last_sender?: string | null
-  reads?: Record<string, number>
-  cleared?: Record<string, number>
+  reads?: Record<string, unknown>
+  cleared?: Record<string, unknown>
 }
 
 interface PrivateChatContextValue {
   threads: ThreadView[]
   totalUnread: number
-  activeThreadId: string | null
-  activeMessages: PrivateMessage[]
-  drawerOpen: boolean
-  setDrawerOpen: (open: boolean) => void
-  /** Partecipante della conversazione attiva (fallback finché i thread si sincronizzano). */
-  activeOther: OtherLite | null
-  openThreadWith: (userId: string) => Promise<void>
-  openThread: (threadId: string) => void
-  closeThread: () => void
-  sendPrivate: (body: string) => Promise<{ error: string | null }>
-  sendPrivateImage: (url: string) => Promise<{ error: string | null }>
   /** Elimina la conversazione dal proprio elenco (soft-delete per-utente). */
   clearThread: (threadId: string) => Promise<void>
 }
 
 const PrivateChatContext = createContext<PrivateChatContextValue | undefined>(undefined)
 
-const RATE_LIMIT = 6
-const RATE_WINDOW_MS = 7000
-
-function threadId(a: string, b: string): string {
-  const [x, y] = orderedPair(a, b)
-  return `${x}__${y}`
-}
-
 export function PrivateChatProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth()
-  const { onlineUsers } = usePresence()
-  const { t } = useI18n()
   const [threads, setThreads] = useState<ThreadView[]>([])
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null)
-  const [activeOther, setActiveOther] = useState<OtherLite | null>(null)
-  const [activeMessages, setActiveMessages] = useState<PrivateMessage[]>([])
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const activeRef = useRef<string | null>(null)
-  const drawerRef = useRef(false)
-  const sendTimes = useRef<number[]>([])
-  const lastBodyRef = useRef<string>('')
   const profileCache = useRef<Map<string, OtherLite>>(new Map())
-  const lastSeenAt = useRef<Map<string, number>>(new Map())
 
   const myId = profile?.id ?? null
-
-  useEffect(() => {
-    drawerRef.current = drawerOpen
-  }, [drawerOpen])
 
   const fetchOther = useCallback(async (id: string): Promise<OtherLite> => {
     const cached = profileCache.current.get(id)
@@ -119,18 +81,6 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
     profileCache.current.set(id, lite)
     return lite
   }, [])
-
-  const markRead = useCallback(
-    async (tid: string) => {
-      if (!myId) return
-      try {
-        await updateDoc(doc(db, 'privateThreads', tid), { [`reads.${myId}`]: Date.now() })
-      } catch {
-        /* il thread potrebbe non esistere ancora */
-      }
-    },
-    [myId],
-  )
 
   // Listener sui thread dell'utente
   useEffect(() => {
@@ -148,12 +98,13 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
         const t = docSnap.data() as ThreadDoc
         const otherId = t.user_a === myId ? t.user_b : t.user_a
         const lastAt = t.last_at ? tsToMillis(t.last_at) : null
-        const cleared = t.cleared?.[myId] ?? 0
+        // reads/cleared sono serverTimestamp() (vedi B6): convertili in ms.
+        const cleared = t.cleared?.[myId] != null ? tsToMillis(t.cleared[myId]) : 0
         // Conversazione eliminata dall'utente: nascondila finché non arriva
         // un nuovo messaggio più recente della cancellazione.
         if (!lastAt || lastAt <= cleared) continue
         const other = await fetchOther(otherId)
-        const myRead = t.reads?.[myId] ?? 0
+        const myRead = t.reads?.[myId] != null ? tsToMillis(t.reads[myId]) : 0
         const unread =
           t.last_sender && t.last_sender !== myId && lastAt && myRead < lastAt ? 1 : 0
         views.push({
@@ -161,17 +112,9 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
           other,
           lastBody: t.last_body ?? null,
           lastAt,
+          lastSender: t.last_sender ?? null,
           unread,
         })
-
-        // suono per nuovi messaggi in arrivo (thread non attivo o drawer chiuso)
-        const prev = lastSeenAt.current.get(docSnap.id) ?? 0
-        if (lastAt && lastAt > prev) {
-          lastSeenAt.current.set(docSnap.id, lastAt)
-          const isFromOther = t.last_sender && t.last_sender !== myId
-          const isActiveOpen = activeRef.current === docSnap.id && drawerRef.current
-          if (isFromOther && !isActiveOpen && prev !== 0) playMessageSound()
-        }
       }
       views.sort((a, b) => (b.lastAt ?? 0) - (a.lastAt ?? 0))
       setThreads(views)
@@ -179,198 +122,15 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
     return () => unsub()
   }, [myId, fetchOther])
 
-  // Listener sui messaggi del thread attivo
-  useEffect(() => {
-    if (!activeThreadId) {
-      setActiveMessages([])
-      return
-    }
-    const q = query(
-      collection(db, 'privateThreads', activeThreadId, 'messages'),
-      orderBy('created_at'),
-    )
-    const unsub = onSnapshot(q, (snap) => {
-      setActiveMessages(
-        snap.docs.map((d) => {
-          const data = d.data()
-          return {
-            id: d.id,
-            thread_id: activeThreadId,
-            sender_id: (data.sender_id as string) ?? '',
-            body: (data.body as string) ?? '',
-            image_url: (data.image_url as string | null) ?? null,
-            created_at: tsToMillis(data.created_at),
-            read_at: data.read_at ? tsToMillis(data.read_at) : null,
-          }
-        }),
-      )
-      if (drawerRef.current) void markRead(activeThreadId)
-    })
-    return () => unsub()
-  }, [activeThreadId, markRead])
-
-  const openThread = useCallback(
-    (tid: string) => {
-      activeRef.current = tid
-      setActiveThreadId(tid)
-      // imposta subito l'interlocutore dal thread già noto (se presente)
-      const known = threads.find((th) => th.thread.id === tid)
-      if (known) setActiveOther(known.other)
-      setDrawerOpen(true)
-      void markRead(tid)
-    },
-    [markRead, threads],
-  )
-
-  const openThreadWith = useCallback(
-    async (userId: string) => {
-      if (!myId || userId === myId) return
-      const [a, b] = orderedPair(myId, userId)
-      const tid = threadId(a, b)
-
-      // 1) APRI SUBITO la finestra: interlocutore dalla presence o dalla cache
-      //    (nessuna lettura Firestore bloccante nel percorso critico)
-      const pres = onlineUsers.find((u) => u.user_id === userId)
-      const other: OtherLite =
-        (pres && {
-          id: pres.user_id,
-          username: pres.username,
-          avatar_url: pres.avatar_url,
-          status: pres.status,
-        }) ||
-        profileCache.current.get(userId) || {
-          id: userId,
-          username: 'user',
-          avatar_url: null,
-          status: 'online',
-        }
-      profileCache.current.set(userId, other)
-      setActiveOther(other)
-      activeRef.current = tid
-      setActiveThreadId(tid)
-      setDrawerOpen(true)
-
-      // 2) in BACKGROUND: crea il thread se manca, segna letto, rifinisci i dati
-      ;(async () => {
-        try {
-          const ref = doc(db, 'privateThreads', tid)
-          const snap = await getDoc(ref)
-          if (!snap.exists()) {
-            await setDoc(ref, {
-              user_a: a,
-              user_b: b,
-              participants: [a, b],
-              created_at: serverTimestamp(),
-              reads: {},
-            })
-          }
-          void markRead(tid)
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.error('[CamRooms] creazione thread privato fallita', err)
-        }
-        if (!pres) fetchOther(userId).then(setActiveOther)
-      })()
-    },
-    [myId, onlineUsers, fetchOther, markRead],
-  )
-
-  const closeThread = useCallback(() => {
-    activeRef.current = null
-    setActiveThreadId(null)
-    setActiveOther(null)
-  }, [])
-
   const clearThread = useCallback(
     async (tid: string) => {
       if (!myId) return
-      lastSeenAt.current.set(tid, Date.now())
+      // serverTimestamp() per coerenza con last_at (evita clock skew, vedi B6).
       await updateDoc(doc(db, 'privateThreads', tid), {
-        [`cleared.${myId}`]: Date.now(),
+        [`cleared.${myId}`]: serverTimestamp(),
       }).catch(() => undefined)
     },
     [myId],
-  )
-
-  const sendPrivate = useCallback(
-    async (raw: string): Promise<{ error: string | null }> => {
-      if (!myId || !activeThreadId) return { error: t('pm.noActive') }
-      const body = sanitizeMessage(raw)
-      if (!body.trim()) return { error: null }
-      if (body === lastBodyRef.current) return { error: t('chat.dupMessage') }
-      const now = Date.now()
-      sendTimes.current = sendTimes.current.filter((ts) => now - ts < RATE_WINDOW_MS)
-      if (sendTimes.current.length >= RATE_LIMIT) return { error: t('chat.tooFast') }
-
-      try {
-        // assicura che il thread esista (potrebbe non essere stato creato
-        // se un tentativo precedente era stato rifiutato dalle regole)
-        if (activeOther) {
-          const [a, b] = orderedPair(myId, activeOther.id)
-          await setDoc(
-            doc(db, 'privateThreads', activeThreadId),
-            { user_a: a, user_b: b, participants: [a, b] },
-            { merge: true },
-          )
-        }
-        await addDoc(collection(db, 'privateThreads', activeThreadId, 'messages'), {
-          sender_id: myId,
-          body,
-          created_at: serverTimestamp(),
-          read_at: null,
-        })
-        await updateDoc(doc(db, 'privateThreads', activeThreadId), {
-          last_body: body,
-          last_at: serverTimestamp(),
-          last_sender: myId,
-          [`reads.${myId}`]: Date.now(),
-        })
-      } catch {
-        // Le Security Rules bloccano l'invio se l'altro utente ti ha bloccato.
-        return { error: t('pm.cantSend') }
-      }
-      sendTimes.current.push(now)
-      lastBodyRef.current = body
-      return { error: null }
-    },
-    [myId, activeThreadId, activeOther, t],
-  )
-
-  const sendPrivateImage = useCallback(
-    async (url: string): Promise<{ error: string | null }> => {
-      if (!myId || !activeThreadId) return { error: t('pm.noActive') }
-      const now = Date.now()
-      sendTimes.current = sendTimes.current.filter((ts) => now - ts < RATE_WINDOW_MS)
-      if (sendTimes.current.length >= RATE_LIMIT) return { error: t('chat.tooFast') }
-      try {
-        if (activeOther) {
-          const [a, b] = orderedPair(myId, activeOther.id)
-          await setDoc(
-            doc(db, 'privateThreads', activeThreadId),
-            { user_a: a, user_b: b, participants: [a, b] },
-            { merge: true },
-          )
-        }
-        await addDoc(collection(db, 'privateThreads', activeThreadId, 'messages'), {
-          sender_id: myId,
-          body: '',
-          image_url: url,
-          created_at: serverTimestamp(),
-          read_at: null,
-        })
-        await updateDoc(doc(db, 'privateThreads', activeThreadId), {
-          last_body: t('chat.photo'),
-          last_at: serverTimestamp(),
-          last_sender: myId,
-          [`reads.${myId}`]: Date.now(),
-        })
-      } catch {
-        return { error: t('pm.cantSend') }
-      }
-      sendTimes.current.push(now)
-      return { error: null }
-    },
-    [myId, activeThreadId, activeOther, t],
   )
 
   const totalUnread = useMemo(
@@ -379,22 +139,8 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
   )
 
   const value = useMemo<PrivateChatContextValue>(
-    () => ({
-      threads,
-      totalUnread,
-      activeThreadId,
-      activeOther,
-      activeMessages,
-      drawerOpen,
-      setDrawerOpen,
-      openThreadWith,
-      openThread,
-      closeThread,
-      sendPrivate,
-      sendPrivateImage,
-      clearThread,
-    }),
-    [threads, totalUnread, activeThreadId, activeOther, activeMessages, drawerOpen, openThreadWith, openThread, closeThread, sendPrivate, sendPrivateImage, clearThread],
+    () => ({ threads, totalUnread, clearThread }),
+    [threads, totalUnread, clearThread],
   )
 
   return <PrivateChatContext.Provider value={value}>{children}</PrivateChatContext.Provider>

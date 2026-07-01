@@ -11,6 +11,7 @@ import { AuthPage } from './components/AuthPage'
 import { ProfileSetup } from './components/ProfileSetup'
 import { ChatLayout } from './components/ChatLayout'
 import { WindowsLayer } from './components/WindowsLayer'
+import { PrivateNotifier } from './components/PrivateNotifier'
 import { WebcamInviteBanner } from './components/WebcamInviteBanner'
 import { AgeGate } from './components/AgeGate'
 import { isFirebaseConfigured } from './lib/firebase'
@@ -54,6 +55,7 @@ function AuthedApp() {
               <WebcamProvider>
                 <ChatLayout />
                 <WindowsLayer />
+                <PrivateNotifier />
                 <WebcamInviteBanner />
               </WebcamProvider>
             </UIProvider>

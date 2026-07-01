@@ -20,16 +20,24 @@ export function MessageInput({ onSend, onSendImage, placeholder, disabled }: Mes
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  // B7: guardia "in-flight" — l'auto-repeat di Enter può lanciare più submit
+  // prima che lastBody/rate-limit si aggiornino, causando invii doppi.
+  const sending = useRef(false)
 
   async function submit() {
-    if (!value.trim() || disabled) return
-    const { error } = await onSend(value)
-    if (error) {
-      setError(error)
-      return
+    if (!value.trim() || disabled || sending.current) return
+    sending.current = true
+    try {
+      const { error } = await onSend(value)
+      if (error) {
+        setError(error)
+        return
+      }
+      setError(null)
+      setValue('')
+    } finally {
+      sending.current = false
     }
-    setError(null)
-    setValue('')
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {

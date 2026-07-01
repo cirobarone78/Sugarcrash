@@ -27,21 +27,18 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
 - ⬜ **S7** Attivare **App Check** + budget alert Firestore; rate-limit server-side
   (token-bucket doc o Cloud Function). *(richiede azione in console)*
 
-## 🟠 P1 — Bug funzionali — Opus 4.8
-- ⬜ **B1** Doppio montaggio mobile+desktop: montare **un solo** layout via
-  breakpoint JS (`useMediaQuery`). Vale per `WindowsLayer`/`MobilePrivateChats`
-  e per `center` in `ChatLayout`. (causa di suoni doppi e "letto" errato)
-- ⬜ **B2** Rimuovere il codice morto in `PrivateChatContext` (drawer/active/
-  sendPrivate, ~200 righe) → una sola sorgente di suono (`usePrivateThread`).
-- ⬜ **B3** `markRead` solo se `document.visibilityState==='visible' && focused`,
-  e non riscrivere se già letto.
-- ⬜ **B4** Webcam: indicatore globale "cam attiva" + Stop indipendente dalla
-  scheda; terminare il broadcast su chiusura chat.
-- ⬜ **B5** Inviti webcam fantasma: scrivere `cancelled` alla chiusura
-  (`onDisconnect`/`beforeunload`) e ignorare i `pending` più vecchi di ~60s.
-- ⬜ **B6** Clock skew: `reads`/`cleared` con `serverTimestamp()`.
-- ⬜ **B7** `MessageInput`: guardia "in-flight" (anti doppio invio con Enter).
-- ⬜ **B8** `FloatingWindow`: ri-vincolare x/y su `window.resize`.
+## 🟠 P1 — Bug funzionali — Opus 4.8 ✅
+- ✅ **B1** Un solo layout montato via `useIsDesktop()` (breakpoint JS 1024px):
+  `WindowsLayer` e `center` in `ChatLayout`. Stop a subscription/suoni doppi.
+- ✅ **B2** Rimosso il codice morto in `PrivateChatContext` (-282 righe). Suono PM
+  centralizzato in `PrivateNotifier` (unica sorgente, un ding per messaggio).
+- ✅ **B3** `markRead` solo se visibile+focused, e non riscrive se già letto.
+- ✅ **B4** Pillola globale "cam attiva" + Stop, indipendente dalla scheda.
+- ✅ **B5** Inviti fantasma: ignora `pending` più vecchi di 60s; `endOutgoing`
+  scrive `cancelled` se non accettato.
+- ✅ **B6** `reads`/`cleared` con `serverTimestamp()` (no più clock skew).
+- ✅ **B7** `MessageInput`: guardia in-flight anti doppio invio.
+- ✅ **B8** Ri-vincolo x/y delle finestre su `window.resize`.
 
 ## 🟡 P2 — Efficienza/costi — Sonnet 5
 - ⬜ **E1** Retention lato query: `where('created_at','>', cutoff)`; attivare TTL
