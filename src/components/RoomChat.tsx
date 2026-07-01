@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { RoomHeader } from './RoomHeader'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
@@ -20,29 +20,18 @@ export function RoomChat({ room, onLeave }: RoomChatProps) {
   const { openUserProfile, openReport } = useUI()
   const { t } = useI18n()
   const isPrivate = room.kind === 'private'
-  const { messages, loading, sendMessage, sendImage, sendSystem } = useRoomMessages(
+  const { messages, loading, sendMessage, sendImage } = useRoomMessages(
     room.id,
     isPrivate ? 'privateRooms' : 'rooms',
   )
-  const joinedRef = useRef<string | null>(null)
 
-  // Ingresso / uscita dalla stanza: presence + messaggi di sistema.
+  // Presence: segnala la stanza corrente all'ingresso e la azzera all'uscita.
   useEffect(() => {
     if (!profile) return
-    if (joinedRef.current === room.id) return
-    joinedRef.current = room.id
-
     setCurrentRoom(room.slug)
-    void sendSystem(t('chat.joined', { user: profile.username }))
-
-    const username = profile.username
-    return () => {
-      joinedRef.current = null
-      void sendSystem(t('chat.left', { user: username }))
-      setCurrentRoom(null)
-    }
+    return () => setCurrentRoom(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [room.id, profile?.id])
+  }, [room.slug, profile?.id])
 
   return (
     <div className="flex h-full flex-col">

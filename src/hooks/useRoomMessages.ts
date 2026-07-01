@@ -56,7 +56,13 @@ export function useRoomMessages(roomId: string | null, coll: RoomCollection = 'r
     const col = collection(db, coll, roomId, 'messages')
     const q = query(col, orderBy('created_at'), limitToLast(PAGE_SIZE))
     const unsub = onSnapshot(q, (snap) => {
-      setMessages(snap.docs.map((d) => mapMessage(d.id, roomId, d.data())))
+      // I vecchi avvisi "è entrato/uscito" (message_type 'system') non vengono
+      // più mostrati: la presenza è già nella lista utenti online.
+      setMessages(
+        snap.docs
+          .map((d) => mapMessage(d.id, roomId, d.data()))
+          .filter((m) => m.message_type !== 'system'),
+      )
       setLoading(false)
       if (initialized.current) {
         for (const change of snap.docChanges()) {
@@ -129,20 +135,5 @@ export function useRoomMessages(roomId: string | null, coll: RoomCollection = 'r
     [roomId, coll, profile, t],
   )
 
-  const sendSystem = useCallback(
-    async (body: string) => {
-      if (!roomId || !profile) return
-      await addDoc(collection(db, coll, roomId, 'messages'), {
-        user_id: profile.id,
-        body,
-        message_type: 'system',
-        author_username: null,
-        author_avatar_url: null,
-        created_at: serverTimestamp(),
-      })
-    },
-    [roomId, coll, profile],
-  )
-
-  return { messages, loading, sendMessage, sendImage, sendSystem }
+  return { messages, loading, sendMessage, sendImage }
 }
