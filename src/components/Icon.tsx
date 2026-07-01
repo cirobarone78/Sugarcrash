@@ -195,20 +195,24 @@ export function Icon({ name, size = 20, className, ...rest }: IconProps) {
   )
 }
 
-/** Marchio dell'app: obiettivo stilizzato con gradiente. */
+/** Marchio dell'app CamRooms: bolla di chat (stanza) con obiettivo webcam. */
 export function Logo({ size = 28 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden="true">
       <defs>
         <linearGradient id="rc-logo" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#3b82f6" />
-          <stop offset="1" stopColor="#2dd4bf" />
+          <stop offset="0" stopColor="#2dd4bf" />
+          <stop offset="1" stopColor="#3b82f6" />
         </linearGradient>
       </defs>
       <rect x="2" y="2" width="28" height="28" rx="9" fill="url(#rc-logo)" />
-      <circle cx="16" cy="16" r="6.5" fill="#0b1120" />
-      <circle cx="16" cy="16" r="3" fill="url(#rc-logo)" />
-      <circle cx="22.5" cy="9.5" r="1.6" fill="#0b1120" />
+      <path
+        d="M7.5 12a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v3.6a4 4 0 0 1-4 4h-4.4l-4.1 3.1a.6.6 0 0 1-1-.48v-2.7a4 4 0 0 1-3.5-3.97z"
+        fill="#ffffff"
+      />
+      <circle cx="16" cy="13.8" r="3.4" fill="url(#rc-logo)" />
+      <circle cx="16" cy="13.8" r="1.35" fill="#ffffff" />
+      <circle cx="17.5" cy="12.3" r="0.5" fill="#ffffff" />
     </svg>
   )
 }
