@@ -1,4 +1,4 @@
-# 📷 RetroCam Chat
+# 📷 CamRooms
 
 PWA di **chatroom tematiche** in tempo reale, ispirata nello spirito alle vecchie
 webchat anni 2000 (stanze pubbliche, lista utenti online, messaggi privati,
@@ -17,7 +17,7 @@ progetto **originale**.
 ## ✨ Funzionalità
 
 ### Accesso: ospiti vs registrati
-RetroCam supporta due livelli d'accesso:
+CamRooms supporta due livelli d'accesso:
 
 | | 👤 Ospite (anonimo) | ⭐ Registrato |
 |---|---|---|

@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'RetroCam Chat',
-        short_name: 'RetroCam',
+        name: 'CamRooms',
+        short_name: 'CamRooms',
         description:
           'Chatroom tematiche realtime con chat privata e webcam opzionale. Versione moderna e sicura delle vecchie webchat.',
         theme_color: '#0a0a12',

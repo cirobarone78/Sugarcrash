@@ -60,7 +60,7 @@ export function AuthPage() {
           <div className="mx-auto mb-3 flex w-fit items-center justify-center rounded-2xl bg-ink-850/60 p-3 shadow-glow">
             <Logo size={44} />
           </div>
-          <h1 className="text-2xl font-bold text-white">RetroCam Chat</h1>
+          <h1 className="text-2xl font-bold text-white">CamRooms</h1>
           <p className="mt-1 text-sm text-ink-400">{t('app.tagline')}</p>
         </div>
 

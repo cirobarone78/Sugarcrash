@@ -177,7 +177,7 @@ export class WebcamPeer {
       }
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error('[RetroCam] errore signaling', err)
+      console.error('[CamRooms] errore signaling', err)
     }
   }
 

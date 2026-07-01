@@ -267,7 +267,7 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
           void markRead(tid)
         } catch (err) {
           // eslint-disable-next-line no-console
-          console.error('[RetroCam] creazione thread privato fallita', err)
+          console.error('[CamRooms] creazione thread privato fallita', err)
         }
         if (!pres) fetchOther(userId).then(setActiveOther)
       })()

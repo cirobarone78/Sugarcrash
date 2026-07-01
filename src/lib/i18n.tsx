@@ -78,7 +78,7 @@ const dict: Record<Lang, Record<string, string>> = {
     'username.taken': 'This nickname is already taken. Choose another.',
 
     // lobby / rooms
-    'lobby.welcome': 'Welcome to RetroCam Chat',
+    'lobby.welcome': 'Welcome to CamRooms',
     'lobby.online': 'Online now',
     'lobby.users': 'users',
     'rooms.title': 'Rooms',
@@ -335,7 +335,7 @@ const dict: Record<Lang, Record<string, string>> = {
     'username.invalid': 'Usa solo lettere, numeri, punto, trattino o underscore.',
     'username.taken': 'Questo nickname è già in uso. Scegline un altro.',
 
-    'lobby.welcome': 'Benvenuto in RetroCam Chat',
+    'lobby.welcome': 'Benvenuto in CamRooms',
     'lobby.online': 'Online ora',
     'lobby.users': 'utenti',
     'rooms.title': 'Stanze',

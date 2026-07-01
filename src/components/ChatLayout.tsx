@@ -64,7 +64,7 @@ export function ChatLayout() {
       <header className="flex items-center justify-between border-b border-white/[0.06] bg-ink-900/70 px-3 py-2 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <Logo size={28} />
-          <span className="text-[15px] font-bold tracking-tight text-white">RetroCam</span>
+          <span className="text-[15px] font-bold tracking-tight text-white">CamRooms</span>
         </div>
         <div className="flex items-center gap-1.5">
           {isGuest && (

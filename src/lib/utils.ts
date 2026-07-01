@@ -106,7 +106,7 @@ export function getIceServers(): RTCIceServer[] {
     if (Array.isArray(parsed)) return parsed as RTCIceServer[]
   } catch {
     // eslint-disable-next-line no-console
-    console.warn('[RetroCam] VITE_ICE_SERVERS non è un JSON valido, uso STUN di default.')
+    console.warn('[CamRooms] VITE_ICE_SERVERS non è un JSON valido, uso STUN di default.')
   }
   return [{ urls: 'stun:stun.l.google.com:19302' }]
 }

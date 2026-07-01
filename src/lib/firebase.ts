@@ -21,7 +21,7 @@ export const isFirebaseConfigured = Boolean(
 if (!isFirebaseConfigured) {
   // eslint-disable-next-line no-console
   console.warn(
-    '[RetroCam] Config Firebase mancante. Copia .env.example in .env e ' +
+    '[CamRooms] Config Firebase mancante. Copia .env.example in .env e ' +
       'inserisci i valori del tuo progetto Firebase.',
   )
 }

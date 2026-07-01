@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "RetroCam Chat — PWA di chatroom tematiche realtime con chat privata e webcam opzionale (Fase 1 + Fase 2).",
+  "description": "CamRooms — PWA di chatroom tematiche realtime con chat privata e webcam opzionale (Fase 1 + Fase 2).",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
