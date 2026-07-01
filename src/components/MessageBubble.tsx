@@ -14,8 +14,10 @@ export function MessageBubble({ message, isOwn, onAuthorClick, onReport }: Messa
   const { t } = useI18n()
   if (message.message_type === 'system') {
     return (
-      <div className="my-1 text-center">
-        <span className="chip bg-ink-850 text-ink-400">{message.body}</span>
+      <div className="my-1.5 text-center">
+        <span className="inline-flex rounded-full bg-white/[0.04] px-3 py-1 text-xs text-ink-400">
+          {message.body}
+        </span>
       </div>
     )
   }
