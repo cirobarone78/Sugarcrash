@@ -3,11 +3,11 @@ import { useRooms } from '../hooks/useRooms'
 import { usePrivateRooms } from '../hooks/usePrivateRooms'
 import { useAuth } from '../context/AuthContext'
 import { usePrivateChat } from '../context/PrivateChatContext'
+import { useWindows } from '../context/WindowsContext'
 import { RoomList } from './RoomList'
 import { LobbyPage } from './LobbyPage'
 import { RoomChat } from './RoomChat'
 import { OnlineUsersPanel } from './OnlineUsersPanel'
-import { PrivateChatDrawer } from './PrivateChatDrawer'
 import { SettingsPanel } from './SettingsPanel'
 import { CreateRoomModal } from './CreateRoomModal'
 import { JoinRoomModal } from './JoinRoomModal'
@@ -23,7 +23,8 @@ export function ChatLayout() {
   const { rooms } = useRooms()
   const { rooms: privateRooms, isUnlocked, createRoom, joinRoom } = usePrivateRooms()
   const { profile, isGuest } = useAuth()
-  const { totalUnread, drawerOpen, setDrawerOpen } = usePrivateChat()
+  const { totalUnread } = usePrivateChat()
+  const { openMessages } = useWindows()
   const { t } = useI18n()
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -77,7 +78,7 @@ export function ChatLayout() {
             </button>
           )}
           <button
-            onClick={() => setDrawerOpen(true)}
+            onClick={openMessages}
             className="relative icon-btn"
             title={t('header.pm')}
           >
@@ -136,13 +137,12 @@ export function ChatLayout() {
         <TabButton
           label={t('tab.private')}
           icon="message"
-          active={drawerOpen}
+          active={false}
           badge={totalUnread}
-          onClick={() => setDrawerOpen(true)}
+          onClick={openMessages}
         />
       </nav>
 
-      <PrivateChatDrawer />
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <CreateRoomModal
         open={createOpen}

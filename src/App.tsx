@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { PresenceProvider } from './context/PresenceContext'
 import { PrivateChatProvider } from './context/PrivateChatContext'
+import { WindowsProvider } from './context/WindowsContext'
 import { BlocksProvider } from './hooks/useBlocks'
 import { UIProvider } from './context/UIContext'
 import { WebcamProvider } from './context/WebcamContext'
@@ -9,6 +10,7 @@ import { I18nProvider, useI18n } from './lib/i18n'
 import { AuthPage } from './components/AuthPage'
 import { ProfileSetup } from './components/ProfileSetup'
 import { ChatLayout } from './components/ChatLayout'
+import { WindowsLayer } from './components/WindowsLayer'
 import { WebcamInviteBanner } from './components/WebcamInviteBanner'
 import { AgeGate } from './components/AgeGate'
 import { isFirebaseConfigured } from './lib/firebase'
@@ -47,12 +49,15 @@ function AuthedApp() {
     <BlocksProvider>
       <PresenceProvider>
         <PrivateChatProvider>
-          <UIProvider>
-            <WebcamProvider>
-              <ChatLayout />
-              <WebcamInviteBanner />
-            </WebcamProvider>
-          </UIProvider>
+          <WindowsProvider>
+            <UIProvider>
+              <WebcamProvider>
+                <ChatLayout />
+                <WindowsLayer />
+                <WebcamInviteBanner />
+              </WebcamProvider>
+            </UIProvider>
+          </WindowsProvider>
         </PrivateChatProvider>
       </PresenceProvider>
     </BlocksProvider>

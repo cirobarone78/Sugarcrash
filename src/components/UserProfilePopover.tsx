@@ -4,7 +4,7 @@ import { Modal } from './Modal'
 import { Avatar } from './Avatar'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
-import { usePrivateChat } from '../context/PrivateChatContext'
+import { useWindows } from '../context/WindowsContext'
 import { usePresence } from '../context/PresenceContext'
 import { useBlocks } from '../hooks/useBlocks'
 import { statusColor } from '../lib/utils'
@@ -30,7 +30,7 @@ export function UserProfilePopover({
   onBlock,
 }: UserProfilePopoverProps) {
   const { profile: me, isGuest: meIsGuest } = useAuth()
-  const { openThreadWith } = usePrivateChat()
+  const { openChat } = useWindows()
   const { onlineUsers } = usePresence()
   const { isBlocked, unblock } = useBlocks()
   const { t } = useI18n()
@@ -117,7 +117,12 @@ export function UserProfilePopover({
                 <button
                   className="btn-primary w-full"
                   onClick={() => {
-                    void openThreadWith(profile.id)
+                    openChat({
+                      id: profile.id,
+                      username: profile.username,
+                      avatar_url: profile.avatar_url,
+                      status: profile.status,
+                    })
                     onClose()
                   }}
                 >

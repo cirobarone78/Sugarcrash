@@ -28,6 +28,7 @@ export type IconName =
   | 'back'
   | 'check'
   | 'plus'
+  | 'minus'
   | 'settings'
   | 'globe'
   | 'alert'
@@ -140,6 +141,7 @@ const PATHS: Record<IconName, ReactElement> = {
   back: <path d="M14 6l-6 6 6 6" />,
   check: <path d="M5 12.5l4.5 4.5L19 7" />,
   plus: <path d="M12 5v14M5 12h14" />,
+  minus: <path d="M5 12h14" />,
   settings: (
     <>
       <circle cx="12" cy="12" r="3" />

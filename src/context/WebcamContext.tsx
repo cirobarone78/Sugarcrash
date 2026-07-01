@@ -22,7 +22,6 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from './AuthContext'
-import { usePrivateChat } from './PrivateChatContext'
 import { useBlocks } from '../hooks/useBlocks'
 import { WebcamPeer, isWebRTCSupported } from '../lib/webrtc'
 import { playInviteSound } from '../lib/sounds'
@@ -89,7 +88,6 @@ function mapSession(id: string, d: Record<string, unknown>): WebcamSession {
 
 export function WebcamProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth()
-  const { openThreadWith, setDrawerOpen } = usePrivateChat()
   const { isBlocked } = useBlocks()
   const { t } = useI18n()
   const supported = isWebRTCSupported()
@@ -286,11 +284,10 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
     inPeer.current = peer
     setIncoming({ session, remoteStream: null, connState: 'new' })
     setPendingInvite(null)
-    // apre la finestra privata con il broadcaster come interlocutore
-    void openThreadWith(session.broadcaster_id)
-    setDrawerOpen(true)
+    // La finestra di chat con il broadcaster viene aperta da WindowsLayer
+    // reagendo alla comparsa di "incoming".
     await peer.connect()
-  }, [pendingInvite, myId, openThreadWith, setDrawerOpen, teardownIncoming])
+  }, [pendingInvite, myId, teardownIncoming])
 
   const declineInvite = useCallback(async () => {
     if (!pendingInvite) return
