@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   addDoc,
   collection,
@@ -7,6 +7,7 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
@@ -18,6 +19,8 @@ import type { Message } from '../lib/types'
 const PAGE_SIZE = 80
 const RATE_LIMIT = 5
 const RATE_WINDOW_MS = 7000
+// I messaggi delle stanze scadono dopo 24 ore (le chat private 1:1 restano).
+const RETENTION_MS = 24 * 60 * 60 * 1000
 
 // 'rooms' = stanze pubbliche statiche · 'privateRooms' = stanze private create dagli utenti
 export type RoomCollection = 'rooms' | 'privateRooms'
@@ -40,15 +43,23 @@ function mapMessage(id: string, roomId: string, data: Record<string, unknown>): 
 export function useRoomMessages(roomId: string | null, coll: RoomCollection = 'rooms') {
   const { profile } = useAuth()
   const { t } = useI18n()
-  const [messages, setMessages] = useState<Message[]>([])
+  const [allMessages, setAllMessages] = useState<Message[]>([])
+  const [now, setNow] = useState(() => Date.now())
   const [loading, setLoading] = useState(true)
   const initialized = useRef(false)
+
+  // Ricontrolla periodicamente per far sparire i messaggi scaduti anche senza
+  // nuovi arrivi.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(id)
+  }, [])
   const sendTimes = useRef<number[]>([])
   const lastBody = useRef<string>('')
 
   useEffect(() => {
     if (!roomId) {
-      setMessages([])
+      setAllMessages([])
       return
     }
     setLoading(true)
@@ -58,7 +69,7 @@ export function useRoomMessages(roomId: string | null, coll: RoomCollection = 'r
     const unsub = onSnapshot(q, (snap) => {
       // I vecchi avvisi "è entrato/uscito" (message_type 'system') non vengono
       // più mostrati: la presenza è già nella lista utenti online.
-      setMessages(
+      setAllMessages(
         snap.docs
           .map((d) => mapMessage(d.id, roomId, d.data()))
           .filter((m) => m.message_type !== 'system'),
@@ -79,6 +90,12 @@ export function useRoomMessages(roomId: string | null, coll: RoomCollection = 'r
     return () => unsub()
   }, [roomId, coll, profile?.id])
 
+  // Mostra solo i messaggi degli ultimi RETENTION_MS: i più vecchi spariscono.
+  const messages = useMemo(
+    () => allMessages.filter((m) => now - m.created_at < RETENTION_MS),
+    [allMessages, now],
+  )
+
   const sendMessage = useCallback(
     async (raw: string): Promise<{ error: string | null }> => {
       if (!roomId || !profile) return { error: t('common.error') }
@@ -98,6 +115,7 @@ export function useRoomMessages(roomId: string | null, coll: RoomCollection = 'r
           author_avatar_url: profile.avatar_url,
           author_is_guest: profile.is_guest,
           created_at: serverTimestamp(),
+          expire_at: Timestamp.fromMillis(Date.now() + RETENTION_MS),
         })
       } catch {
         return { error: t('chat.sendFailed') }
@@ -125,6 +143,7 @@ export function useRoomMessages(roomId: string | null, coll: RoomCollection = 'r
           author_avatar_url: profile.avatar_url,
           author_is_guest: profile.is_guest,
           created_at: serverTimestamp(),
+          expire_at: Timestamp.fromMillis(Date.now() + RETENTION_MS),
         })
       } catch {
         return { error: t('chat.sendFailed') }
