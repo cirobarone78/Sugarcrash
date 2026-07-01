@@ -37,7 +37,13 @@ export function WindowsLayer() {
     ensureGeom,
     removeGeom,
   } = useWindows()
-  const { threads } = usePrivateChat()
+  const { threads, clearThread } = usePrivateChat()
+
+  const deleteChat = (id: string) => {
+    if (typeof window !== 'undefined' && !window.confirm(t('pm.deleteConfirm'))) return
+    void clearThread(id)
+    closeChat(id)
+  }
   const {
     outgoing,
     incoming,
@@ -184,6 +190,13 @@ export function WindowsLayer() {
                 >
                   <Icon name="flag" size={15} />
                 </button>
+                <button
+                  onClick={() => deleteChat(c.id)}
+                  className="rounded-md p-1 text-ink-400 hover:bg-ink-800 hover:text-accent-red"
+                  title={t('pm.delete')}
+                >
+                  <Icon name="trash" size={15} />
+                </button>
               </div>
             }
           >
@@ -304,25 +317,36 @@ export function WindowsLayer() {
               <p className="p-6 text-center text-sm text-ink-400">{t('pm.empty')}</p>
             ) : (
               threads.map((th) => (
-                <button
+                <div
                   key={th.thread.id}
-                  onClick={() => openChat(th.other)}
-                  className="flex w-full items-center gap-3 border-b border-white/[0.04] px-3 py-2.5 text-left hover:bg-white/[0.04]"
+                  className="group/row flex w-full items-center gap-2 border-b border-white/[0.04] pr-2 hover:bg-white/[0.04]"
                 >
-                  <Avatar username={th.other.username} avatarUrl={th.other.avatar_url} status={th.other.status} size={38} showStatus ring />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-semibold text-ink-200">{th.other.username}</span>
-                      {th.lastAt && <span className="shrink-0 text-[10px] text-ink-400">{formatTime(th.lastAt)}</span>}
+                  <button
+                    onClick={() => openChat(th.other)}
+                    className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left"
+                  >
+                    <Avatar username={th.other.username} avatarUrl={th.other.avatar_url} status={th.other.status} size={38} showStatus ring />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-semibold text-ink-200">{th.other.username}</span>
+                        {th.lastAt && <span className="shrink-0 text-[10px] text-ink-400">{formatTime(th.lastAt)}</span>}
+                      </div>
+                      <p className="truncate text-xs text-ink-400">{th.lastBody ?? t('pm.newConv')}</p>
                     </div>
-                    <p className="truncate text-xs text-ink-400">{th.lastBody ?? t('pm.newConv')}</p>
-                  </div>
-                  {th.unread > 0 && (
-                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-red px-1 text-[10px] font-bold text-white">
-                      {th.unread}
-                    </span>
-                  )}
-                </button>
+                    {th.unread > 0 && (
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-red px-1 text-[10px] font-bold text-white">
+                        {th.unread}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => deleteChat(th.thread.id)}
+                    className="shrink-0 rounded-md p-1.5 text-ink-400 hover:bg-ink-800 hover:text-accent-red"
+                    title={t('pm.delete')}
+                  >
+                    <Icon name="trash" size={16} />
+                  </button>
+                </div>
               ))
             )}
           </div>

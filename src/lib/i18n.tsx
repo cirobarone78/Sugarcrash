@@ -148,6 +148,8 @@ const dict: Record<Lang, Record<string, string>> = {
     'pm.empty':
       'No private conversations. Open an online user’s profile and tap “Private message”.',
     'pm.newConv': 'New conversation',
+    'pm.delete': 'Delete chat',
+    'pm.deleteConfirm': 'Delete this conversation? It will be removed from your list and history.',
     'pm.selectConv': 'Select a conversation.',
     'pm.start': 'Start the conversation with {user}.',
     'pm.placeholder': 'Message to {user}…',
@@ -398,6 +400,8 @@ const dict: Record<Lang, Record<string, string>> = {
     'pm.empty':
       'Nessuna conversazione privata. Apri il profilo di un utente online e premi “Messaggio privato”.',
     'pm.newConv': 'Nuova conversazione',
+    'pm.delete': 'Elimina chat',
+    'pm.deleteConfirm': 'Eliminare questa conversazione? Verrà rimossa dal tuo elenco e dalla cronologia.',
     'pm.selectConv': 'Seleziona una conversazione.',
     'pm.start': 'Inizia la conversazione con {user}.',
     'pm.placeholder': 'Messaggio a {user}…',

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   addDoc,
   collection,
@@ -24,7 +24,8 @@ const RATE_WINDOW_MS = 7000
 export function usePrivateThread(threadId: string, otherId: string, focused: boolean) {
   const { profile } = useAuth()
   const { t } = useI18n()
-  const [messages, setMessages] = useState<PrivateMessage[]>([])
+  const [allMessages, setAllMessages] = useState<PrivateMessage[]>([])
+  const [clearedAt, setClearedAt] = useState(0)
   const initialized = useRef(false)
   const sendTimes = useRef<number[]>([])
   const lastBody = useRef('')
@@ -54,7 +55,7 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
       orderBy('created_at'),
     )
     const unsub = onSnapshot(q, (snap) => {
-      setMessages(
+      setAllMessages(
         snap.docs.map((d) => {
           const data = d.data()
           return {
@@ -81,6 +82,21 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
     void markRead()
     return () => unsub()
   }, [threadId, myId, markRead])
+
+  // Legge il timestamp di "eliminazione" per nascondere la vecchia cronologia.
+  useEffect(() => {
+    if (!myId) return
+    const unsub = onSnapshot(doc(db, 'privateThreads', threadId), (snap) => {
+      const c = snap.data()?.cleared as Record<string, number> | undefined
+      setClearedAt(c?.[myId] ?? 0)
+    })
+    return () => unsub()
+  }, [threadId, myId])
+
+  const messages = useMemo(
+    () => (clearedAt ? allMessages.filter((m) => m.created_at > clearedAt) : allMessages),
+    [allMessages, clearedAt],
+  )
 
   useEffect(() => {
     if (focused) void markRead()

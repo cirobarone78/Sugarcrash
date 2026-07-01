@@ -20,7 +20,7 @@ import { formatTime } from '../lib/utils'
  */
 export function MobilePrivateChats() {
   const { chats, closeChat, messagesOpen, closeMessages, openChat } = useWindows()
-  const { threads } = usePrivateChat()
+  const { threads, clearThread } = usePrivateChat()
   const { profile } = useAuth()
   const { openUserProfile, openBlock, openReport } = useUI()
   const {
@@ -69,6 +69,12 @@ export function MobilePrivateChats() {
     if (messagesOpen) closeMessages()
   }
 
+  const deleteChat = (id: string) => {
+    if (typeof window !== 'undefined' && !window.confirm(t('pm.deleteConfirm'))) return
+    void clearThread(id)
+    closeChat(id)
+  }
+
   const showRemote = active && incoming && incoming.session.broadcaster_id === active.other.id
   const showLocal = active && outgoing && outgoing.session.viewer_id === active.other.id
 
@@ -103,6 +109,13 @@ export function MobilePrivateChats() {
               title={t('profile.report')}
             >
               <Icon name="flag" size={16} />
+            </button>
+            <button
+              onClick={() => deleteChat(active.id)}
+              className="rounded-md p-1.5 text-ink-400 hover:bg-ink-800 hover:text-accent-red"
+              title={t('pm.delete')}
+            >
+              <Icon name="trash" size={16} />
             </button>
           </>
         ) : (
@@ -206,25 +219,36 @@ export function MobilePrivateChats() {
             <p className="p-8 text-center text-sm text-ink-400">{t('pm.empty')}</p>
           ) : (
             threads.map((th) => (
-              <button
+              <div
                 key={th.thread.id}
-                onClick={() => openChat(th.other)}
-                className="flex w-full items-center gap-3 border-b border-white/[0.04] px-3 py-3 text-left hover:bg-white/[0.04]"
+                className="flex w-full items-center gap-2 border-b border-white/[0.04] pr-2"
               >
-                <Avatar username={th.other.username} avatarUrl={th.other.avatar_url} status={th.other.status} size={44} showStatus ring />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-semibold text-ink-200">{th.other.username}</span>
-                    {th.lastAt && <span className="shrink-0 text-[10px] text-ink-400">{formatTime(th.lastAt)}</span>}
+                <button
+                  onClick={() => openChat(th.other)}
+                  className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left"
+                >
+                  <Avatar username={th.other.username} avatarUrl={th.other.avatar_url} status={th.other.status} size={44} showStatus ring />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-semibold text-ink-200">{th.other.username}</span>
+                      {th.lastAt && <span className="shrink-0 text-[10px] text-ink-400">{formatTime(th.lastAt)}</span>}
+                    </div>
+                    <p className="truncate text-xs text-ink-400">{th.lastBody ?? t('pm.newConv')}</p>
                   </div>
-                  <p className="truncate text-xs text-ink-400">{th.lastBody ?? t('pm.newConv')}</p>
-                </div>
-                {th.unread > 0 && (
-                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-red px-1 text-[10px] font-bold text-white">
-                    {th.unread}
-                  </span>
-                )}
-              </button>
+                  {th.unread > 0 && (
+                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-red px-1 text-[10px] font-bold text-white">
+                      {th.unread}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => deleteChat(th.thread.id)}
+                  className="shrink-0 rounded-md p-2 text-ink-400 hover:bg-ink-800 hover:text-accent-red"
+                  title={t('pm.delete')}
+                >
+                  <Icon name="trash" size={18} />
+                </button>
+              </div>
             ))
           )}
         </div>

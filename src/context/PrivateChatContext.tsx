@@ -52,6 +52,7 @@ interface ThreadDoc {
   last_at?: unknown
   last_sender?: string | null
   reads?: Record<string, number>
+  cleared?: Record<string, number>
 }
 
 interface PrivateChatContextValue {
@@ -68,6 +69,8 @@ interface PrivateChatContextValue {
   closeThread: () => void
   sendPrivate: (body: string) => Promise<{ error: string | null }>
   sendPrivateImage: (url: string) => Promise<{ error: string | null }>
+  /** Elimina la conversazione dal proprio elenco (soft-delete per-utente). */
+  clearThread: (threadId: string) => Promise<void>
 }
 
 const PrivateChatContext = createContext<PrivateChatContextValue | undefined>(undefined)
@@ -144,8 +147,12 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
       for (const docSnap of snap.docs) {
         const t = docSnap.data() as ThreadDoc
         const otherId = t.user_a === myId ? t.user_b : t.user_a
-        const other = await fetchOther(otherId)
         const lastAt = t.last_at ? tsToMillis(t.last_at) : null
+        const cleared = t.cleared?.[myId] ?? 0
+        // Conversazione eliminata dall'utente: nascondila finché non arriva
+        // un nuovo messaggio più recente della cancellazione.
+        if (!lastAt || lastAt <= cleared) continue
+        const other = await fetchOther(otherId)
         const myRead = t.reads?.[myId] ?? 0
         const unread =
           t.last_sender && t.last_sender !== myId && lastAt && myRead < lastAt ? 1 : 0
@@ -274,6 +281,17 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
     setActiveOther(null)
   }, [])
 
+  const clearThread = useCallback(
+    async (tid: string) => {
+      if (!myId) return
+      lastSeenAt.current.set(tid, Date.now())
+      await updateDoc(doc(db, 'privateThreads', tid), {
+        [`cleared.${myId}`]: Date.now(),
+      }).catch(() => undefined)
+    },
+    [myId],
+  )
+
   const sendPrivate = useCallback(
     async (raw: string): Promise<{ error: string | null }> => {
       if (!myId || !activeThreadId) return { error: t('pm.noActive') }
@@ -374,8 +392,9 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
       closeThread,
       sendPrivate,
       sendPrivateImage,
+      clearThread,
     }),
-    [threads, totalUnread, activeThreadId, activeOther, activeMessages, drawerOpen, openThreadWith, openThread, closeThread, sendPrivate, sendPrivateImage],
+    [threads, totalUnread, activeThreadId, activeOther, activeMessages, drawerOpen, openThreadWith, openThread, closeThread, sendPrivate, sendPrivateImage, clearThread],
   )
 
   return <PrivateChatContext.Provider value={value}>{children}</PrivateChatContext.Provider>
