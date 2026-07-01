@@ -92,32 +92,56 @@ export function PrivateChatProvider({ children }: { children: ReactNode }) {
       collection(db, 'privateThreads'),
       where('participants', 'array-contains', myId),
     )
-    const unsub = onSnapshot(q, async (snap) => {
-      const views: ThreadView[] = []
-      for (const docSnap of snap.docs) {
-        const t = docSnap.data() as ThreadDoc
-        const otherId = t.user_a === myId ? t.user_b : t.user_a
-        const lastAt = t.last_at ? tsToMillis(t.last_at) : null
-        // reads/cleared sono serverTimestamp() (vedi B6): convertili in ms.
-        const cleared = t.cleared?.[myId] != null ? tsToMillis(t.cleared[myId]) : 0
-        // Conversazione eliminata dall'utente: nascondila finché non arriva
-        // un nuovo messaggio più recente della cancellazione.
-        if (!lastAt || lastAt <= cleared) continue
-        const other = await fetchOther(otherId)
-        const myRead = t.reads?.[myId] != null ? tsToMillis(t.reads[myId]) : 0
-        const unread =
-          t.last_sender && t.last_sender !== myId && lastAt && myRead < lastAt ? 1 : 0
-        views.push({
-          thread: { id: docSnap.id, user_a: t.user_a, user_b: t.user_b },
-          other,
-          lastBody: t.last_body ?? null,
-          lastAt,
-          lastSender: t.last_sender ?? null,
-          unread,
+    const unsub = onSnapshot(q, (snap) => {
+      // E4: prima si raccolgono gli id da risolvere, poi si scaricano i
+      // profili mancanti IN PARALLELO (Promise.all) invece che in serie
+      // (un await per thread), e infine si costruiscono le view in modo
+      // sincrono dalla cache già popolata.
+      void (async () => {
+        interface Pending {
+          docSnap: (typeof snap.docs)[number]
+          t: ThreadDoc
+          otherId: string
+          lastAt: number
+        }
+        const pending: Pending[] = []
+        const otherIds = new Set<string>()
+        for (const docSnap of snap.docs) {
+          const t = docSnap.data() as ThreadDoc
+          const otherId = t.user_a === myId ? t.user_b : t.user_a
+          const lastAt = t.last_at ? tsToMillis(t.last_at) : null
+          // reads/cleared sono serverTimestamp() (vedi B6): convertili in ms.
+          const cleared = t.cleared?.[myId] != null ? tsToMillis(t.cleared[myId]) : 0
+          // Conversazione eliminata dall'utente: nascondila finché non arriva
+          // un nuovo messaggio più recente della cancellazione.
+          if (!lastAt || lastAt <= cleared) continue
+          pending.push({ docSnap, t, otherId, lastAt })
+          otherIds.add(otherId)
+        }
+
+        const missing = [...otherIds].filter((id) => !profileCache.current.has(id))
+        if (missing.length > 0) {
+          await Promise.all(missing.map((id) => fetchOther(id)))
+        }
+
+        const views: ThreadView[] = pending.map(({ docSnap, t, otherId, lastAt }) => {
+          // Già risolto sopra (cache o Promise.all): sempre presente qui.
+          const other = profileCache.current.get(otherId)!
+          const myRead = t.reads?.[myId] != null ? tsToMillis(t.reads[myId]) : 0
+          const unread =
+            t.last_sender && t.last_sender !== myId && lastAt && myRead < lastAt ? 1 : 0
+          return {
+            thread: { id: docSnap.id, user_a: t.user_a, user_b: t.user_b },
+            other,
+            lastBody: t.last_body ?? null,
+            lastAt,
+            lastSender: t.last_sender ?? null,
+            unread,
+          }
         })
-      }
-      views.sort((a, b) => (b.lastAt ?? 0) - (a.lastAt ?? 0))
-      setThreads(views)
+        views.sort((a, b) => (b.lastAt ?? 0) - (a.lastAt ?? 0))
+        setThreads(views)
+      })()
     })
     return () => unsub()
   }, [myId, fetchOther])

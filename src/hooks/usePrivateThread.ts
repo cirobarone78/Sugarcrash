@@ -7,17 +7,15 @@ import {
   orderBy,
   query,
   serverTimestamp,
-  setDoc,
   updateDoc,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
-import { sanitizeMessage, orderedPair, tsToMillis } from '../lib/utils'
+import { sanitizeMessage, tsToMillis } from '../lib/utils'
+import { ensurePrivateThread } from '../lib/threads'
+import { createSendGuard } from '../lib/sendGuard'
 import { useI18n } from '../lib/i18n'
 import type { PrivateMessage } from '../lib/types'
-
-const RATE_LIMIT = 6
-const RATE_WINDOW_MS = 7000
 
 /** Messaggi + invio per un singolo thread privato (una finestra indipendente). */
 export function usePrivateThread(threadId: string, otherId: string, focused: boolean) {
@@ -25,8 +23,7 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
   const { t } = useI18n()
   const [allMessages, setAllMessages] = useState<PrivateMessage[]>([])
   const [clearedAt, setClearedAt] = useState(0)
-  const sendTimes = useRef<number[]>([])
-  const lastBody = useRef('')
+  const guard = useRef(createSendGuard()).current
   const myId = profile?.id ?? null
 
   // Ref sempre aggiornata a fuoco/visibilità così markRead resta stabile.
@@ -57,13 +54,8 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
 
   const ensureThread = useCallback(async () => {
     if (!myId) return
-    const [a, b] = orderedPair(myId, otherId)
-    await setDoc(
-      doc(db, 'privateThreads', threadId),
-      { user_a: a, user_b: b, participants: [a, b] },
-      { merge: true },
-    ).catch(() => undefined)
-  }, [myId, otherId, threadId])
+    await ensurePrivateThread(myId, otherId)
+  }, [myId, otherId])
 
   useEffect(() => {
     latestAtRef.current = 0
@@ -129,10 +121,8 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
       if (!myId) return { error: t('common.error') }
       const body = sanitizeMessage(raw)
       if (!body.trim()) return { error: null }
-      if (body === lastBody.current) return { error: t('chat.dupMessage') }
-      const now = Date.now()
-      sendTimes.current = sendTimes.current.filter((ts) => now - ts < RATE_WINDOW_MS)
-      if (sendTimes.current.length >= RATE_LIMIT) return { error: t('chat.tooFast') }
+      const guardError = guard.check(body)
+      if (guardError) return { error: t(guardError) }
       try {
         await ensureThread()
         await addDoc(collection(db, 'privateThreads', threadId, 'messages'), {
@@ -150,19 +140,17 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
       } catch {
         return { error: t('pm.cantSend') }
       }
-      sendTimes.current.push(now)
-      lastBody.current = body
+      guard.record(body)
       return { error: null }
     },
-    [myId, threadId, ensureThread, t],
+    [myId, threadId, ensureThread, t, guard],
   )
 
   const sendImage = useCallback(
     async (url: string): Promise<{ error: string | null }> => {
       if (!myId) return { error: t('common.error') }
-      const now = Date.now()
-      sendTimes.current = sendTimes.current.filter((ts) => now - ts < RATE_WINDOW_MS)
-      if (sendTimes.current.length >= RATE_LIMIT) return { error: t('chat.tooFast') }
+      const guardError = guard.check()
+      if (guardError) return { error: t(guardError) }
       try {
         await ensureThread()
         await addDoc(collection(db, 'privateThreads', threadId, 'messages'), {
@@ -181,10 +169,10 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
       } catch {
         return { error: t('pm.cantSend') }
       }
-      sendTimes.current.push(now)
+      guard.record()
       return { error: null }
     },
-    [myId, threadId, ensureThread, t],
+    [myId, threadId, ensureThread, t, guard],
   )
 
   return { messages, send, sendImage }

@@ -26,6 +26,7 @@ import { useBlocks } from '../hooks/useBlocks'
 import { WebcamPeer, isWebRTCSupported } from '../lib/webrtc'
 import { playInviteSound } from '../lib/sounds'
 import { orderedPair, tsToMillis } from '../lib/utils'
+import { privateThreadId } from '../lib/threads'
 import { useI18n } from '../lib/i18n'
 import type { WebcamSession, WebcamStatus } from '../lib/types'
 
@@ -207,9 +208,12 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      // assicura l'esistenza del thread privato
+      // Assicura l'esistenza del thread privato SOLO se non esiste già: qui (a
+      // differenza di ensurePrivateThread, C2) va creato con created_at/reads,
+      // quindi non usa l'helper condiviso per non rischiare di sovrascriverli
+      // su un thread già esistente.
       const [a, b] = orderedPair(myId, viewerId)
-      const tid = `${a}__${b}`
+      const tid = privateThreadId(myId, viewerId)
       const threadRef = doc(db, 'privateThreads', tid)
       const threadSnap = await getDoc(threadRef)
       if (!threadSnap.exists()) {

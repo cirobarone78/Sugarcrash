@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useAuth } from './AuthContext'
-import { orderedPair } from '../lib/utils'
+import { privateThreadId } from '../lib/threads'
 import type { UserStatus } from '../lib/types'
 
 export interface WinOther {
@@ -52,11 +52,6 @@ interface WindowsContextValue {
 }
 
 const WindowsContext = createContext<WindowsContextValue | undefined>(undefined)
-
-function threadIdOf(a: string, b: string): string {
-  const [x, y] = orderedPair(a, b)
-  return `${x}__${y}`
-}
 
 // Posizione a cascata: parte in basso a destra e sfalsa a ogni nuova finestra.
 function cascade(index: number, w: number, h: number): { x: number; y: number } {
@@ -154,7 +149,7 @@ export function WindowsProvider({ children }: { children: ReactNode }) {
   const openChat = useCallback(
     (other: WinOther) => {
       if (!myId || other.id === myId) return
-      const id = threadIdOf(myId, other.id)
+      const id = privateThreadId(myId, other.id)
       const w = 340
       const h = 460
       setChats((prev) => (prev.some((c) => c.id === id) ? prev : [...prev, { id, other }]))

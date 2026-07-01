@@ -41,18 +41,20 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
 - ✅ **B8** Ri-vincolo x/y delle finestre su `window.resize`.
 
 ## 🟡 P2 — Efficienza/costi — Sonnet 5
-- ⬜ **E1** Retention lato query: `where('created_at','>', cutoff)`; attivare TTL
-  su `expire_at`.
-- ⬜ **E2** Immagini: salvare miniatura nel messaggio + originale a parte; cap
-  dimensione; pulizia immagini chat private.
-- ⬜ **E3** `markRead`: scrivere solo se davvero non letto, con debounce.
-- ⬜ **E4** Lista thread: `Promise.all` sui profili (ora seriale) o denormalizzare.
+- ✅ **E1** Retention lato query: `where('created_at','>', cutoff)` + timer alla
+  scadenza reale (niente più heartbeat 60s). *(TTL su `expire_at` = azione console)*
+- ⏸️ **E2** Immagini: miniatura + originale a parte; cap; pulizia immagini chat
+  private. *(rimandato: scelta di prodotto da confermare)*
+- ✅ **E3** `markRead` scrive solo se davvero non letto *(coperto da B3)*.
+- ✅ **E4** Lista thread: profili risolti in parallelo (`Promise.all`).
 
 ## ⚪ P3 — Pulizia/refactor — Sonnet 5
-- ⬜ **C1** Rimuovere config deploy inutilizzate (`netlify.toml`, `vercel.json`) e
-  `signaling/server.js` (o documentarlo come opzionale).
-- ⬜ **C2** Deduplicare: rate-limit (×3), `threadId`/`ensureThread` (×4), mapper
-  messaggi, riga-lista conversazioni e pannelli webcam (desktop/mobile).
+- ⏸️ **C1** Rimuovere `netlify.toml`/`vercel.json`/`signaling/server.js`.
+  *(rimandato: confermare se non si usa Netlify/Vercel)*
+- ✅ **C2** Deduplicati (helper): `sendGuard` (rate-limit unificato a 6) e
+  `threads` (`privateThreadId`/`ensurePrivateThread`).
+  ⬜ residuo: componenti UI duplicati (riga-lista, pannelli webcam) — rimandati
+  per non toccare i file appena modificati in P1.
 
 ---
 

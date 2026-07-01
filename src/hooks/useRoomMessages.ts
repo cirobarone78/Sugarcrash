@@ -8,19 +8,22 @@ import {
   query,
   serverTimestamp,
   Timestamp,
+  where,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { sanitizeMessage, tsToMillis } from '../lib/utils'
 import { playMessageSound } from '../lib/sounds'
+import { createSendGuard } from '../lib/sendGuard'
 import { useI18n } from '../lib/i18n'
 import type { Message } from '../lib/types'
 
 const PAGE_SIZE = 80
-const RATE_LIMIT = 5
-const RATE_WINDOW_MS = 7000
 // I messaggi delle stanze scadono dopo 24 ore (le chat private 1:1 restano).
 const RETENTION_MS = 24 * 60 * 60 * 1000
+// Granularità con cui il "cutoff" della query avanza (E1): non serve
+// rifare la subscription ad ogni render, basta ogni mezz'ora.
+const CUTOFF_BUCKET_MS = 30 * 60 * 1000
 
 // 'rooms' = stanze pubbliche statiche · 'privateRooms' = stanze private create dagli utenti
 export type RoomCollection = 'rooms' | 'privateRooms'
@@ -47,15 +50,20 @@ export function useRoomMessages(roomId: string | null, coll: RoomCollection = 'r
   const [now, setNow] = useState(() => Date.now())
   const [loading, setLoading] = useState(true)
   const initialized = useRef(false)
+  const guard = useRef(createSendGuard()).current
+  const expiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Ricontrolla periodicamente per far sparire i messaggi scaduti anche senza
-  // nuovi arrivi.
+  // E1: bucket "grezzo" (avanza ogni 30 min) usato solo per far scorrere in
+  // avanti il cutoff della query lato server senza risottoscrivere ad ogni
+  // render (la query stessa filtra già `created_at`, vedi sotto).
+  const [cutoffBucket, setCutoffBucket] = useState(() => Math.floor(Date.now() / CUTOFF_BUCKET_MS))
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 60_000)
+    const id = setInterval(
+      () => setCutoffBucket(Math.floor(Date.now() / CUTOFF_BUCKET_MS)),
+      CUTOFF_BUCKET_MS,
+    )
     return () => clearInterval(id)
   }, [])
-  const sendTimes = useRef<number[]>([])
-  const lastBody = useRef<string>('')
 
   useEffect(() => {
     if (!roomId) {
@@ -65,7 +73,16 @@ export function useRoomMessages(roomId: string | null, coll: RoomCollection = 'r
     setLoading(true)
     initialized.current = false
     const col = collection(db, coll, roomId, 'messages')
-    const q = query(col, orderBy('created_at'), limitToLast(PAGE_SIZE))
+    // E1: il cutoff di retention è applicato lato server (where + orderBy sullo
+    // stesso campo `created_at`: query composta valida, nessun indice composito
+    // richiesto). I documenti già scaduti non vengono più letti/fatturati.
+    const cutoff = Timestamp.fromMillis(Date.now() - RETENTION_MS)
+    const q = query(
+      col,
+      where('created_at', '>', cutoff),
+      orderBy('created_at'),
+      limitToLast(PAGE_SIZE),
+    )
     const unsub = onSnapshot(q, (snap) => {
       // I vecchi avvisi "è entrato/uscito" (message_type 'system') non vengono
       // più mostrati: la presenza è già nella lista utenti online.
@@ -88,23 +105,43 @@ export function useRoomMessages(roomId: string | null, coll: RoomCollection = 'r
       initialized.current = true
     })
     return () => unsub()
-  }, [roomId, coll, profile?.id])
+  }, [roomId, coll, profile?.id, cutoffBucket])
 
-  // Mostra solo i messaggi degli ultimi RETENTION_MS: i più vecchi spariscono.
+  // Mostra solo i messaggi degli ultimi RETENTION_MS: rete di sicurezza lato
+  // client (la query server-side già esclude i più vecchi, vedi sopra).
   const messages = useMemo(
     () => allMessages.filter((m) => now - m.created_at < RETENTION_MS),
     [allMessages, now],
   )
+
+  // E1: invece di un heartbeat fisso ogni 60s (che ri-renderizzava ogni stanza
+  // montata anche da ferma), pianifica un singolo setTimeout sulla scadenza
+  // reale del messaggio più vecchio visibile, riprogrammato quando `messages`
+  // cambia (nuovo arrivo o scadenza già applicata).
+  useEffect(() => {
+    if (expiryTimer.current) {
+      clearTimeout(expiryTimer.current)
+      expiryTimer.current = null
+    }
+    if (messages.length === 0) return
+    const oldest = messages[0]
+    const delay = Math.max(0, oldest.created_at + RETENTION_MS - Date.now())
+    expiryTimer.current = setTimeout(() => setNow(Date.now()), delay + 50)
+    return () => {
+      if (expiryTimer.current) {
+        clearTimeout(expiryTimer.current)
+        expiryTimer.current = null
+      }
+    }
+  }, [messages])
 
   const sendMessage = useCallback(
     async (raw: string): Promise<{ error: string | null }> => {
       if (!roomId || !profile) return { error: t('common.error') }
       const body = sanitizeMessage(raw)
       if (!body.trim()) return { error: null }
-      if (body === lastBody.current) return { error: t('chat.dupMessage') }
-      const now = Date.now()
-      sendTimes.current = sendTimes.current.filter((ts) => now - ts < RATE_WINDOW_MS)
-      if (sendTimes.current.length >= RATE_LIMIT) return { error: t('chat.tooFast') }
+      const guardError = guard.check(body)
+      if (guardError) return { error: t(guardError) }
 
       try {
         await addDoc(collection(db, coll, roomId, 'messages'), {
@@ -120,19 +157,17 @@ export function useRoomMessages(roomId: string | null, coll: RoomCollection = 'r
       } catch {
         return { error: t('chat.sendFailed') }
       }
-      sendTimes.current.push(now)
-      lastBody.current = body
+      guard.record(body)
       return { error: null }
     },
-    [roomId, coll, profile, t],
+    [roomId, coll, profile, t, guard],
   )
 
   const sendImage = useCallback(
     async (url: string): Promise<{ error: string | null }> => {
       if (!roomId || !profile) return { error: t('common.error') }
-      const now = Date.now()
-      sendTimes.current = sendTimes.current.filter((ts) => now - ts < RATE_WINDOW_MS)
-      if (sendTimes.current.length >= RATE_LIMIT) return { error: t('chat.tooFast') }
+      const guardError = guard.check()
+      if (guardError) return { error: t(guardError) }
       try {
         await addDoc(collection(db, coll, roomId, 'messages'), {
           user_id: profile.id,
@@ -148,10 +183,10 @@ export function useRoomMessages(roomId: string | null, coll: RoomCollection = 'r
       } catch {
         return { error: t('chat.sendFailed') }
       }
-      sendTimes.current.push(now)
+      guard.record()
       return { error: null }
     },
-    [roomId, coll, profile, t],
+    [roomId, coll, profile, t, guard],
   )
 
   return { messages, loading, sendMessage, sendImage }
