@@ -8,11 +8,13 @@ import type { Message } from '../lib/types'
 interface MessageListProps {
   messages: Message[]
   loading?: boolean
+  /** Path della collection messaggi (per l'originale immagine on-demand, E2). */
+  messagesBasePath?: string
   onAuthorClick?: (userId: string) => void
   onReport?: (message: Message) => void
 }
 
-export function MessageList({ messages, loading, onAuthorClick, onReport }: MessageListProps) {
+export function MessageList({ messages, loading, messagesBasePath, onAuthorClick, onReport }: MessageListProps) {
   const { profile } = useAuth()
   const { isBlocked } = useBlocks()
   const { t } = useI18n()
@@ -40,6 +42,7 @@ export function MessageList({ messages, loading, onAuthorClick, onReport }: Mess
           key={m.id}
           message={m}
           isOwn={m.user_id === profile?.id}
+          messagesBasePath={messagesBasePath}
           onAuthorClick={onAuthorClick}
           onReport={onReport}
         />

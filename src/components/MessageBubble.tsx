@@ -1,16 +1,19 @@
 import { Avatar } from './Avatar'
-import { formatTime, isSafeImageDataUrl } from '../lib/utils'
+import { ImageMessage } from './ImageMessage'
+import { formatTime } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
 import type { Message } from '../lib/types'
 
 interface MessageBubbleProps {
   message: Message
   isOwn: boolean
+  /** Path della collection messaggi (per caricare l'originale immagine, E2). */
+  messagesBasePath?: string
   onAuthorClick?: (userId: string) => void
   onReport?: (message: Message) => void
 }
 
-export function MessageBubble({ message, isOwn, onAuthorClick, onReport }: MessageBubbleProps) {
+export function MessageBubble({ message, isOwn, messagesBasePath, onAuthorClick, onReport }: MessageBubbleProps) {
   const { t } = useI18n()
   if (message.message_type === 'system') {
     return (
@@ -47,18 +50,14 @@ export function MessageBubble({ message, isOwn, onAuthorClick, onReport }: Messa
           <span className="text-[10px] text-ink-400">{formatTime(message.created_at)}</span>
         </div>
         {message.message_type === 'image' && message.image_url ? (
-          isSafeImageDataUrl(message.image_url) ? (
-            <img
-              src={message.image_url}
-              alt=""
-              loading="lazy"
-              className="max-h-64 max-w-full rounded-2xl border border-ink-700 object-cover"
-            />
-          ) : (
-            <div className="rounded-2xl border border-ink-700 bg-white/[0.04] px-3.5 py-2 text-sm text-ink-400">
-              {t('chat.invalidImage')}
-            </div>
-          )
+          <ImageMessage
+            thumbUrl={message.image_url}
+            fullPath={
+              message.has_full && messagesBasePath
+                ? `${messagesBasePath}/${message.id}`
+                : null
+            }
+          />
         ) : (
           <div
             className={`whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-sm shadow-sm ${

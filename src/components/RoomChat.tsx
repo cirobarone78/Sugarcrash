@@ -20,10 +20,8 @@ export function RoomChat({ room, onLeave }: RoomChatProps) {
   const { openUserProfile, openReport } = useUI()
   const { t } = useI18n()
   const isPrivate = room.kind === 'private'
-  const { messages, loading, sendMessage, sendImage } = useRoomMessages(
-    room.id,
-    isPrivate ? 'privateRooms' : 'rooms',
-  )
+  const coll = isPrivate ? 'privateRooms' : 'rooms'
+  const { messages, loading, sendMessage, sendImage } = useRoomMessages(room.id, coll)
 
   // Presence: segnala la stanza corrente all'ingresso e la azzera all'uscita.
   useEffect(() => {
@@ -39,6 +37,7 @@ export function RoomChat({ room, onLeave }: RoomChatProps) {
       <MessageList
         messages={messages}
         loading={loading}
+        messagesBasePath={`${coll}/${room.id}/messages`}
         onAuthorClick={openUserProfile}
         onReport={(m) =>
           openReport({

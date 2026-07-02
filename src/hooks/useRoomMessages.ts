@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext'
 import { sanitizeMessage, tsToMillis } from '../lib/utils'
 import { playMessageSound } from '../lib/sounds'
 import { createSendGuard } from '../lib/sendGuard'
+import { writeFullImage } from '../lib/images'
 import { useI18n } from '../lib/i18n'
 import type { Message } from '../lib/types'
 
@@ -36,6 +37,7 @@ function mapMessage(id: string, roomId: string, data: Record<string, unknown>): 
     body: (data.body as string) ?? '',
     message_type: (data.message_type as Message['message_type']) ?? 'text',
     image_url: (data.image_url as string | null) ?? null,
+    has_full: Boolean(data.image_full),
     created_at: tsToMillis(data.created_at),
     author_username: (data.author_username as string | null) ?? null,
     author_avatar_url: (data.author_avatar_url as string | null) ?? null,
@@ -164,22 +166,25 @@ export function useRoomMessages(roomId: string | null, coll: RoomCollection = 'r
   )
 
   const sendImage = useCallback(
-    async (url: string): Promise<{ error: string | null }> => {
+    async (thumb: string, full: string, hasFull: boolean): Promise<{ error: string | null }> => {
       if (!roomId || !profile) return { error: t('common.error') }
       const guardError = guard.check()
       if (guardError) return { error: t(guardError) }
       try {
-        await addDoc(collection(db, coll, roomId, 'messages'), {
+        // E2: nel messaggio va solo la miniatura; l'originale nel sottodoc blob.
+        const ref = await addDoc(collection(db, coll, roomId, 'messages'), {
           user_id: profile.id,
           body: '',
           message_type: 'image',
-          image_url: url,
+          image_url: thumb,
+          image_full: hasFull,
           author_username: profile.username,
           author_avatar_url: profile.avatar_url,
           author_is_guest: profile.is_guest,
           created_at: serverTimestamp(),
           expire_at: Timestamp.fromMillis(Date.now() + RETENTION_MS),
         })
+        if (hasFull) await writeFullImage(ref, full).catch(() => undefined)
       } catch {
         return { error: t('chat.sendFailed') }
       }

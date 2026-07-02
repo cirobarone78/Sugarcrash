@@ -29,6 +29,14 @@ service cloud.firestore {
         && data.image_url.matches('^data:image/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$');
     }
 
+    // E2 — sottodoc `blob/full`: l'immagine ORIGINALE (data-URL) separata dal
+    // messaggio, caricata solo su richiesta. Cap più ampio della miniatura.
+    function fullImageOk(data) {
+      return data.value is string
+        && data.value.size() <= 400000
+        && data.value.matches('^data:image/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$');
+    }
+
     // Validazione comune dei messaggi (stanze, stanze private, thread privati).
     // body ≤ 2000; message_type ∈ {text,image}; se image → image_url valido,
     // se text → image_url assente.
@@ -128,6 +136,15 @@ service cloud.firestore {
           && validMessage(request.resource.data)
           && !blockedByCurrent(otherParticipant(threadId));
         allow update, delete: if false;
+
+        // E2: immagine originale, write-once, leggibile dai partecipanti.
+        match /blob/{docId} {
+          allow read: if signedIn() && uid() in threadParticipants(threadId);
+          allow create: if isRegistered()
+            && uid() in threadParticipants(threadId)
+            && fullImageOk(request.resource.data);
+          allow update, delete: if false;
+        }
       }
     }
 
@@ -176,6 +193,15 @@ service cloud.firestore {
           && validMessage(request.resource.data)
           && authorBound(request.resource.data);
         allow update, delete: if false;
+
+        // E2: immagine originale, write-once, leggibile dai membri.
+        match /blob/{docId} {
+          allow read: if signedIn() && isRoomMember(roomId);
+          allow create: if signedIn()
+            && isRoomMember(roomId)
+            && fullImageOk(request.resource.data);
+          allow update, delete: if false;
+        }
       }
     }
 

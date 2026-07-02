@@ -13,6 +13,7 @@ import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { sanitizeMessage, tsToMillis } from '../lib/utils'
 import { ensurePrivateThread } from '../lib/threads'
+import { writeFullImage } from '../lib/images'
 import { createSendGuard } from '../lib/sendGuard'
 import { useI18n } from '../lib/i18n'
 import type { PrivateMessage } from '../lib/types'
@@ -73,6 +74,7 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
           sender_id: (data.sender_id as string) ?? '',
           body: (data.body as string) ?? '',
           image_url: (data.image_url as string | null) ?? null,
+          has_full: Boolean(data.image_full),
           created_at: tsToMillis(data.created_at),
           read_at: null,
         }
@@ -147,19 +149,22 @@ export function usePrivateThread(threadId: string, otherId: string, focused: boo
   )
 
   const sendImage = useCallback(
-    async (url: string): Promise<{ error: string | null }> => {
+    async (thumb: string, full: string, hasFull: boolean): Promise<{ error: string | null }> => {
       if (!myId) return { error: t('common.error') }
       const guardError = guard.check()
       if (guardError) return { error: t(guardError) }
       try {
         await ensureThread()
-        await addDoc(collection(db, 'privateThreads', threadId, 'messages'), {
+        // E2: miniatura nel messaggio, originale nel sottodoc blob (on demand).
+        const ref = await addDoc(collection(db, 'privateThreads', threadId, 'messages'), {
           sender_id: myId,
           body: '',
           message_type: 'image',
-          image_url: url,
+          image_url: thumb,
+          image_full: hasFull,
           created_at: serverTimestamp(),
         })
+        if (hasFull) await writeFullImage(ref, full).catch(() => undefined)
         await updateDoc(doc(db, 'privateThreads', threadId), {
           last_body: t('chat.photo'),
           last_at: serverTimestamp(),

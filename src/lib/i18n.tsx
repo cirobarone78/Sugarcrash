@@ -144,6 +144,7 @@ const dict: Record<Lang, Record<string, string>> = {
     'chat.imageTooBig': 'Image too large (max 5 MB).',
     'chat.uploadFailed': 'Image upload failed.',
     'chat.invalidImage': '[invalid image]',
+    'chat.viewImage': 'View image',
 
     // online users
     'users.title': 'Online users',
@@ -447,6 +448,7 @@ const dict: Record<Lang, Record<string, string>> = {
     'chat.imageTooBig': 'Immagine troppo grande (max 5 MB).',
     'chat.uploadFailed': 'Caricamento immagine non riuscito.',
     'chat.invalidImage': '[immagine non valida]',
+    'chat.viewImage': 'Apri immagine',
 
     'users.title': 'Utenti online',
     'users.empty': 'Nessuno qui per ora.',

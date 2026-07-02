@@ -2,13 +2,21 @@ import { useRef, useState } from 'react'
 import { EmojiPicker } from './EmojiPicker'
 import { MAX_MESSAGE_LENGTH } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
-import { compressImageToDataUrl } from '../lib/upload'
+import { compressImagePair } from '../lib/upload'
 import { Icon } from './Icon'
 
 interface MessageInputProps {
   onSend: (body: string) => Promise<{ error: string | null }>
-  /** Invio immagine (URL Storage). Se assente, il pulsante allega non compare. */
-  onSendImage?: (url: string) => Promise<{ error: string | null }>
+  /**
+   * Invio immagine: `thumb` è la miniatura incorporata, `full` l'originale,
+   * `hasFull` true se l'originale va salvato a parte. Se assente, il pulsante
+   * allega non compare.
+   */
+  onSendImage?: (
+    thumb: string,
+    full: string,
+    hasFull: boolean,
+  ) => Promise<{ error: string | null }>
   placeholder?: string
   disabled?: boolean
 }
@@ -53,13 +61,13 @@ export function MessageInput({ onSend, onSendImage, placeholder, disabled }: Mes
     if (!file || !onSendImage) return
     setError(null)
     setUploading(true)
-    const { url, errorKey } = await compressImageToDataUrl(file)
-    if (errorKey || !url) {
+    const { thumb, full, sameAsThumb, errorKey } = await compressImagePair(file)
+    if (errorKey || !thumb || !full) {
       setUploading(false)
       setError(t(errorKey ?? 'chat.uploadFailed'))
       return
     }
-    const { error } = await onSendImage(url)
+    const { error } = await onSendImage(thumb, full, !sameAsThumb)
     setUploading(false)
     if (error) setError(error)
   }

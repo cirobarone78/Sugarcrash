@@ -43,8 +43,11 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
 ## 🟡 P2 — Efficienza/costi — Sonnet 5
 - ✅ **E1** Retention lato query: `where('created_at','>', cutoff)` + timer alla
   scadenza reale (niente più heartbeat 60s). *(TTL su `expire_at` = azione console)*
-- ⏸️ **E2** Immagini: miniatura + originale a parte; cap; pulizia immagini chat
-  private. *(rimandato: scelta di prodotto da confermare)*
+- ✅ **E2** Immagini: **miniatura** (~≤420px) incorporata nel messaggio +
+  **originale** (~≤1280px) in sottodoc write-once `blob/full`, caricato solo
+  al click (lightbox). La lista messaggi non trasmette più i data-URL pieni
+  (grande risparmio sulle chat private, che caricano tutta la cronologia).
+  Regole `blob` aggiunte (privateThreads + privateRooms) — **DA RI-PUBBLICARE**.
 - ✅ **E3** `markRead` scrive solo se davvero non letto *(coperto da B3)*.
 - ✅ **E4** Lista thread: profili risolti in parallelo (`Promise.all`).
 

@@ -53,6 +53,8 @@ export interface Message {
   body: string
   message_type: MessageType
   image_url?: string | null
+  /** E2: true se esiste un originale separato in `blob/full` (image_url è la miniatura). */
+  has_full?: boolean
   created_at: number
   // denormalizzati al momento dell'invio (Firestore-friendly)
   author_username?: string | null
@@ -74,6 +76,8 @@ export interface PrivateMessage {
   sender_id: string
   body: string
   image_url?: string | null
+  /** E2: true se esiste un originale separato in `blob/full`. */
+  has_full?: boolean
   created_at: number
   read_at: number | null
 }
