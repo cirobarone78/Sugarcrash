@@ -657,17 +657,18 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
   // ('watch' pending verso di me). Attivo solo durante il broadcast.
   useEffect(() => {
     if (!myId || !isLive) return
-    // Query a CAMPO SINGOLO (broadcaster_id): nessun indice composito richiesto,
-    // così il listener non fallisce mai in silenzio. kind/status/freschezza
-    // vengono filtrati lato client.
-    const q = query(collection(db, 'webcamSessions'), where('broadcaster_id', '==', myId))
+    // IMPORTANTE: la regola di lettura di webcamSessions richiede
+    // `uid() in participants`, quindi Firestore consente SOLO query su
+    // `participants array-contains` (una query su broadcaster_id verrebbe negata
+    // silenziosamente). Filtriamo broadcaster_id/kind/status lato client.
+    const q = query(collection(db, 'webcamSessions'), where('participants', 'array-contains', myId))
     const unsub = onSnapshot(
       q,
       (snap) => {
         for (const change of snap.docChanges()) {
           if (change.type !== 'added' && change.type !== 'modified') continue
           const s = mapSession(change.doc.id, change.doc.data())
-          if (s.kind !== 'watch' || s.status !== 'pending') continue
+          if (s.broadcaster_id !== myId || s.kind !== 'watch' || s.status !== 'pending') continue
           // Ignora richieste stale (>60s) rimaste pending da sessioni vecchie.
           if (Date.now() - s.created_at > 60000) continue
           void serveViewer(s)
