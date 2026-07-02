@@ -3,6 +3,8 @@ import { usePrivateChat } from '../context/PrivateChatContext'
 import { useWindows } from '../context/WindowsContext'
 import { useAuth } from '../context/AuthContext'
 import { playMessageSound } from '../lib/sounds'
+import { showSystemNotification } from '../lib/notify'
+import { useI18n } from '../lib/i18n'
 
 /**
  * UNICA sorgente dei suoni per i messaggi privati.
@@ -25,6 +27,7 @@ export function PrivateNotifier() {
   const { threads } = usePrivateChat()
   const { chats, geom } = useWindows()
   const { profile } = useAuth()
+  const { t } = useI18n()
   const myId = profile?.id ?? null
 
   const lastAtRef = useRef<Map<string, number>>(new Map())
@@ -55,8 +58,15 @@ export function PrivateNotifier() {
       const windowOpen = chats.some((c) => c.id === id) && !!g && !g.min
       if (windowOpen && visible) continue
       playMessageSound()
+      // Notifica di sistema se la scheda è in background (helper già gestisce
+      // preferenza/permesso/visibilità).
+      showSystemNotification(
+        th.other.username,
+        th.lastBody || t('pm.newMessage'),
+        `pm-${id}`,
+      )
     }
-  }, [threads, chats, geom, myId])
+  }, [threads, chats, geom, myId, t])
 
   return null
 }

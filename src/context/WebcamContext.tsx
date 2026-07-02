@@ -32,6 +32,7 @@ import {
   LOW_VIDEO_CONSTRAINTS,
 } from '../lib/webrtc'
 import { playInviteSound } from '../lib/sounds'
+import { showSystemNotification } from '../lib/notify'
 import { orderedPair, tsToMillis } from '../lib/utils'
 import { privateThreadId } from '../lib/threads'
 import { useI18n } from '../lib/i18n'
@@ -733,11 +734,10 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
           // riporta come 'added' anche i pending vecchi, che non vanno ri-mostrati.
           if (Date.now() - s.created_at > 60000) continue
           getDoc(doc(db, 'profiles', s.broadcaster_id)).then((p) => {
-            setPendingInvite({
-              session: s,
-              fromUsername: (p.data()?.username as string) ?? 'Un utente',
-            })
+            const fromUsername = (p.data()?.username as string) ?? 'Un utente'
+            setPendingInvite({ session: s, fromUsername })
             playInviteSound()
+            showSystemNotification(fromUsername, t('cam.inviteText', { name: fromUsername }), `cam-${s.id}`)
           })
         }
 

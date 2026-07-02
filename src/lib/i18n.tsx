@@ -235,6 +235,11 @@ const dict: Record<Lang, Record<string, string>> = {
       'While invisible you don’t appear in the user list or counts, but you still receive messages.',
     'settings.sound': 'New message sound',
     'settings.soundHint': 'A short beep for new messages.',
+    'settings.notify': 'System notifications',
+    'settings.notifyHint':
+      'Show a system alert for private messages and webcam invites when the app is in the background.',
+    'settings.notifyDenied': 'Notifications are blocked in your browser settings.',
+    'pm.newMessage': 'New message',
     'settings.blocked': 'Blocked users',
     'settings.noBlocked': 'No blocked users.',
     'settings.unblock': 'Unblock',
@@ -543,6 +548,11 @@ const dict: Record<Lang, Record<string, string>> = {
       'Da invisibile non compari nella lista utenti né nei conteggi, ma continui a ricevere i messaggi.',
     'settings.sound': 'Suono nuovi messaggi',
     'settings.soundHint': 'Un breve segnale acustico per i nuovi messaggi.',
+    'settings.notify': 'Notifiche di sistema',
+    'settings.notifyHint':
+      'Mostra un avviso di sistema per messaggi privati e inviti webcam quando l’app è in background.',
+    'settings.notifyDenied': 'Le notifiche sono bloccate nelle impostazioni del browser.',
+    'pm.newMessage': 'Nuovo messaggio',
     'settings.blocked': 'Utenti bloccati',
     'settings.noBlocked': 'Nessun utente bloccato.',
     'settings.unblock': 'Sblocca',

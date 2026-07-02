@@ -102,7 +102,12 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
 ---
 
 ## 🚀 Backlog — Crescita
-- ⬜ Notifiche push PWA (nuovi PM, inviti cam, "c'è gente in stanza").
+- 🟦 Notifiche push PWA (nuovi PM, inviti cam).
+  - ✅ **Layer gratuito (no backend)**: Notification API di sistema per nuovi PM
+    e inviti webcam quando l'app è aperta ma in background; toggle in
+    Impostazioni (chiede il permesso browser); preferenza in `retrocam.notify`.
+  - ⏸️ **App COMPLETAMENTE chiusa**: richiede FCM + Cloud Function (piano
+    **Blaze**). Da decidere insieme (vedi Hardening console). Non attivato.
 - ⬜ Contro il "ghost town": conteggio online globale, eventi/orari a tema,
   fusione stanze poco frequentate.
 - ⬜ Link diretti a stanza condivisibili + "invita un amico".

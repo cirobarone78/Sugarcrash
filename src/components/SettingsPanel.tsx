@@ -8,6 +8,13 @@ import { useAuth } from '../context/AuthContext'
 import { useBlocks } from '../hooks/useBlocks'
 import { db } from '../lib/firebase'
 import { isSoundEnabled, setSoundEnabled } from '../lib/sounds'
+import {
+  notificationsEnabled,
+  notificationsSupported,
+  notificationPermission,
+  requestNotificationPermission,
+  setNotificationsEnabled,
+} from '../lib/notify'
 import { statusColor, validateUsername } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
 import { SexSelector } from './SexBadge'
@@ -25,6 +32,8 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const { profile, isGuest, setStatus, updateProfile, signOut } = useAuth()
   const { blockedIds, unblock } = useBlocks()
   const [sound, setSound] = useState(isSoundEnabled())
+  const [notify, setNotify] = useState(notificationsEnabled())
+  const [notifyDenied, setNotifyDenied] = useState(notificationPermission() === 'denied')
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? '')
   const [nickname, setNickname] = useState(profile?.username ?? '')
   const [nickErr, setNickErr] = useState<string | null>(null)
@@ -121,6 +130,22 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
     const next = !sound
     setSound(next)
     setSoundEnabled(next)
+  }
+
+  async function toggleNotify() {
+    if (notify) {
+      setNotify(false)
+      setNotificationsEnabled(false)
+      return
+    }
+    // Attivazione: richiede il permesso browser (gesto utente).
+    const granted = await requestNotificationPermission()
+    if (!granted) {
+      setNotifyDenied(notificationPermission() === 'denied')
+      return
+    }
+    setNotify(true)
+    setNotificationsEnabled(true)
   }
 
   async function saveAvatar() {
@@ -277,6 +302,29 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             />
           </button>
         </section>
+
+        {/* Notifiche di sistema */}
+        {notificationsSupported() && (
+          <section className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-ink-200">{t('settings.notify')}</h3>
+              <p className="text-xs text-ink-400">{t('settings.notifyHint')}</p>
+              {notifyDenied && (
+                <p className="mt-1 text-xs text-accent-red">{t('settings.notifyDenied')}</p>
+              )}
+            </div>
+            <button
+              onClick={toggleNotify}
+              disabled={notifyDenied}
+              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-40 ${notify ? 'bg-brand-600' : 'bg-ink-700'}`}
+              aria-pressed={notify}
+            >
+              <span
+                className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white transition-all ${notify ? 'left-[22px]' : 'left-0.5'}`}
+              />
+            </button>
+          </section>
+        )}
 
         {/* Utenti bloccati */}
         <section>
