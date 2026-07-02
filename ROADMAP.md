@@ -108,8 +108,11 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
     Impostazioni (chiede il permesso browser); preferenza in `retrocam.notify`.
   - ⏸️ **App COMPLETAMENTE chiusa**: richiede FCM + Cloud Function (piano
     **Blaze**). Da decidere insieme (vedi Hardening console). Non attivato.
-- ⬜ Contro il "ghost town": conteggio online globale, eventi/orari a tema,
-  fusione stanze poco frequentate.
+- 🟦 Contro il "ghost town":
+  - ✅ **Conteggio online globale** (pillola nell'header) + **"N in roulette
+    adesso"** sul launcher e nella schermata iniziale roulette ("Sii il primo"
+    se vuota).
+  - ⬜ Eventi/orari a tema, fusione stanze poco frequentate.
 - ✅ **Amici/preferiti con accettazione reciproca**: `friendships/{a__b}`
   (un doc per coppia); il richiedente crea `pending`, SOLO l'altro può
   `accepted`; entrambi possono eliminare. UI: pulsante nel profilo utente
@@ -119,7 +122,10 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
   aggiunte — **DA RI-PUBBLICARE**.
 - ✅ Schermata di accesso: messaggio "registrati per conservare le chat su tutti
   i dispositivi + lista amici" (spinge la registrazione).
-- ⬜ Link diretti a stanza condivisibili + "invita un amico".
+- ✅ **Link diretti a stanza condivisibili + "invita un amico"**: pulsante
+  Condividi nell'header stanza (pubbliche) → `?room=slug` via Web Share/clipboard;
+  deep-link che apre in automatico la stanza pubblica all'avvio; "Invita un
+  amico" in lobby (condivide l'URL dell'app). `src/lib/share.ts`.
 - ✅ **Cam-roulette 1:1 casuale** (gancio virale): matchmaking su RTDB
   (transazioni atomiche + onDisconnect), webcam **bidirezionale** (una sola
   peer connection sendrecv), "Avanti"/Stop, mute/video, blocca/segnala, skip di

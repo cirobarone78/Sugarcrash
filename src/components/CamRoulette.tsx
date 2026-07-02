@@ -149,6 +149,10 @@ export function CamRoulette() {
               <Icon name="camera" size={30} />
             </span>
             <p className="text-sm text-ink-300">{t('roulette.intro')}</p>
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-accent-green">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent-green" />
+              {r.liveCount > 0 ? t('roulette.live', { n: r.liveCount }) : t('roulette.liveFirst')}
+            </p>
             <div className="w-full space-y-1.5">
               <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
                 {t('roulette.pref')}

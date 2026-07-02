@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { usePresence } from '../context/PresenceContext'
 import { useI18n } from '../lib/i18n'
 import { RoomCard } from './RoomCard'
 import { Icon } from './Icon'
 import { Glyph } from './Glyph'
+import { appBaseUrl, shareOrCopy } from '../lib/share'
 import type { Room } from '../lib/types'
 
 interface LobbyPageProps {
@@ -16,15 +18,36 @@ interface LobbyPageProps {
 export function LobbyPage({ rooms, privateRooms, onEnter, onCreatePrivate, isUnlocked }: LobbyPageProps) {
   const { roomCounts, onlineUsers } = usePresence()
   const { t } = useI18n()
+  const [invited, setInvited] = useState(false)
+
+  async function invite() {
+    const res = await shareOrCopy(appBaseUrl(), 'CamRooms', t('share.inviteText'))
+    if (res === 'copied') {
+      setInvited(true)
+      setTimeout(() => setInvited(false), 2000)
+    }
+  }
+
   return (
     <div className="h-full overflow-y-auto p-4 sm:p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-white">{t('lobby.welcome')}</h1>
-        <p className="mt-1 text-sm text-ink-400">
-          {t('lobby.online')}:{' '}
-          <span className="font-semibold text-accent-green">{onlineUsers.length}</span>{' '}
-          {t('lobby.users')}.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold text-white">{t('lobby.welcome')}</h1>
+          <p className="mt-1 text-sm text-ink-400">
+            {t('lobby.online')}:{' '}
+            <span className="font-semibold text-accent-green">{onlineUsers.length}</span>{' '}
+            {t('lobby.users')}.
+          </p>
+        </div>
+        <button onClick={invite} className="btn-ghost relative shrink-0 text-sm">
+          <Icon name="sparkle" size={16} />
+          <span className="hidden sm:inline">{t('share.invite')}</span>
+          {invited && (
+            <span className="absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded-lg bg-ink-800 px-2 py-1 text-[11px] text-ink-100 shadow-lg">
+              {t('share.copied')}
+            </span>
+          )}
+        </button>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">

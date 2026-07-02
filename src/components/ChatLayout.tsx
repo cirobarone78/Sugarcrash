@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRooms } from '../hooks/useRooms'
 import { usePrivateRooms } from '../hooks/usePrivateRooms'
 import { useAuth } from '../context/AuthContext'
 import { usePrivateChat } from '../context/PrivateChatContext'
 import { useWindows } from '../context/WindowsContext'
+import { usePresence } from '../context/PresenceContext'
 import { useRoulette } from '../context/RouletteContext'
 import { useFriends } from '../context/FriendsContext'
 import { useIsDesktop } from '../hooks/useIsDesktop'
@@ -30,6 +31,7 @@ export function ChatLayout() {
   const { openMessages } = useWindows()
   const roulette = useRoulette()
   const { incoming } = useFriends()
+  const { onlineUsers } = usePresence()
   const isDesktop = useIsDesktop()
   const { t } = useI18n()
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
@@ -52,6 +54,19 @@ export function ChatLayout() {
     setSelectedRoom(room)
     setTab('chat')
   }
+
+  // Deep-link `?room=slug`: apre automaticamente una stanza PUBBLICA condivisa
+  // via link. Le stanze private non si aprono da link (serve la password).
+  useEffect(() => {
+    if (rooms.length === 0) return
+    const slug = new URLSearchParams(window.location.search).get('room')
+    if (!slug) return
+    const target = rooms.find((r) => r.slug === slug && r.kind !== 'private')
+    // Pulisce il parametro così non riscatta a ogni render/navigazione.
+    window.history.replaceState(null, '', window.location.pathname)
+    if (target) enterRoom(target)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rooms.length])
 
   function selectRoom(room: Room) {
     // stanza privata bloccata → chiedi la password
@@ -89,6 +104,13 @@ export function ChatLayout() {
           </button>
           <Logo size={28} />
           <span className="text-[15px] font-bold tracking-tight text-white">CamRooms</span>
+          <span
+            className="ml-1 hidden items-center gap-1 rounded-full bg-accent-green/15 px-2 py-0.5 text-[11px] font-semibold text-accent-green sm:inline-flex"
+            title={t('online.count', { n: onlineUsers.length })}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-accent-green" />
+            {t('online.count', { n: onlineUsers.length })}
+          </span>
         </div>
         <div className="flex items-center gap-1.5">
           {isGuest && (
@@ -103,11 +125,16 @@ export function ChatLayout() {
           )}
           <button
             onClick={roulette.open}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-teal-500 to-brand-500 px-3 py-1.5 text-xs font-semibold text-white shadow-glow hover:brightness-110"
+            className="relative inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-teal-500 to-brand-500 px-3 py-1.5 text-xs font-semibold text-white shadow-glow hover:brightness-110"
             title={t('roulette.launch')}
           >
             <Icon name="camera" size={14} />
             <span className="hidden sm:inline">{t('roulette.launch')}</span>
+            {roulette.liveCount > 0 && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-white/25 px-1 text-[10px] font-bold">
+                {roulette.liveCount}
+              </span>
+            )}
           </button>
           <button
             onClick={openMessages}

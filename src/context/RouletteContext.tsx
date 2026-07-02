@@ -75,6 +75,8 @@ interface RouletteData {
 interface RouletteContextValue {
   supported: boolean
   panelOpen: boolean
+  /** Quante persone stanno usando la roulette ora (in coda + abbinate). */
+  liveCount: number
   status: Status
   pref: MatchPref
   setPref: (p: MatchPref) => void
@@ -107,6 +109,7 @@ export function RouletteProvider({ children }: { children: ReactNode }) {
   const myId = profile?.id ?? null
 
   const [panelOpen, setPanelOpen] = useState(false)
+  const [liveCount, setLiveCount] = useState(0)
   const [status, setStatus] = useState<Status>('idle')
   const [pref, setPrefState] = useState<MatchPref>(
     () => (localStorage.getItem(PREF_KEY) as MatchPref) || 'any',
@@ -135,6 +138,26 @@ export function RouletteProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     prefRef.current = pref
   }, [pref])
+
+  // Conteggio "live" di chi sta usando la roulette (coda + abbinati): mostrato
+  // sul launcher per combattere l'effetto stanza vuota.
+  useEffect(() => {
+    if (!myId) {
+      setLiveCount(0)
+      return
+    }
+    const unsub = onValue(
+      ref(rtdb, 'roulette'),
+      (snap) => {
+        const v = (snap.val() as RouletteData | null) || {}
+        const w = v.waiting ? Object.keys(v.waiting) : []
+        const p = v.pairs ? Object.keys(v.pairs) : []
+        setLiveCount(new Set([...w, ...p]).size)
+      },
+      () => setLiveCount(0),
+    )
+    return () => unsub()
+  }, [myId])
   const setStatusBoth = useCallback((s: Status) => {
     statusRef.current = s
     setStatus(s)
@@ -409,6 +432,7 @@ export function RouletteProvider({ children }: { children: ReactNode }) {
     () => ({
       supported,
       panelOpen,
+      liveCount,
       status,
       pref,
       setPref,
@@ -428,9 +452,9 @@ export function RouletteProvider({ children }: { children: ReactNode }) {
       toggleVideo,
     }),
     [
-      supported, panelOpen, status, pref, setPref, partner, connState, localStream,
-      remoteStream, micOn, videoOn, error, open, close, start, next, stop, toggleMic,
-      toggleVideo,
+      supported, panelOpen, liveCount, status, pref, setPref, partner, connState,
+      localStream, remoteStream, micOn, videoOn, error, open, close, start, next, stop,
+      toggleMic, toggleVideo,
     ],
   )
 
