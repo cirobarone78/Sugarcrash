@@ -24,8 +24,8 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
 - ✅ **S5** Presence: `.validate` `user_id === $uid` su `status/$uid`.
 - ✅ **S6** Client: `isSafeImageDataUrl()` prima del render; rimosso il link
   `<a href>` a `data:`; immagine non valida → placeholder.
-- ⬜ **S7** Attivare **App Check** + budget alert Firestore; rate-limit server-side
-  (token-bucket doc o Cloud Function). *(richiede azione in console)*
+- 🟦 **S7** Attivare **App Check** + budget alert Firestore; rate-limit server-side.
+  *(azioni in console — guida pronta: `docs/CONSOLE_HARDENING.md`)*
 
 ## 🟠 P1 — Bug funzionali — Opus 4.8 ✅
 - ✅ **B1** Un solo layout montato via `useIsDesktop()` (breakpoint JS 1024px):
