@@ -64,10 +64,20 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/blocks/$(blockerId)/list/$(uid()));
     }
 
+    // Validazione dei campi profilo auto-dichiarati (solo se presenti).
+    // NB: l'obbligatorietà del `sex` è imposta lato client (attributo di profilo
+    // auto-dichiarato, non controllo di sicurezza): qui validiamo solo il valore.
+    function profileFieldsOk(data) {
+      return (!('sex' in data) || data.sex in ['male', 'female', 'couple', 'undisclosed'])
+        && (!('age' in data) || (data.age is int && data.age >= 18 && data.age <= 120))
+        && (!('country' in data) || (data.country is string && data.country.size() <= 40));
+    }
+
     // profiles: lettura pubblica, scrittura solo del proprio
     match /profiles/{userId} {
       allow read: if signedIn();
-      allow create, update: if signedIn() && uid() == userId;
+      allow create, update: if signedIn() && uid() == userId
+        && profileFieldsOk(request.resource.data);
       allow delete: if false;
     }
 

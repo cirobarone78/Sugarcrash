@@ -10,7 +10,8 @@ import { db } from '../lib/firebase'
 import { isSoundEnabled, setSoundEnabled } from '../lib/sounds'
 import { statusColor, validateUsername } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
-import type { Profile, UserStatus } from '../lib/types'
+import { SexSelector } from './SexBadge'
+import type { Profile, Sex, UserStatus } from '../lib/types'
 
 interface SettingsPanelProps {
   open: boolean
@@ -30,6 +31,11 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const [nickSaved, setNickSaved] = useState(false)
   const [blockedProfiles, setBlockedProfiles] = useState<Pick<Profile, 'id' | 'username' | 'avatar_url'>[]>([])
   const [savedMsg, setSavedMsg] = useState(false)
+  const [sex, setSex] = useState<Sex | undefined>(profile?.sex)
+  const [age, setAge] = useState(profile?.age ? String(profile.age) : '')
+  const [country, setCountry] = useState(profile?.country ?? '')
+  const [sexErr, setSexErr] = useState<string | null>(null)
+  const [sexSaved, setSexSaved] = useState(false)
 
   useEffect(() => {
     setAvatarUrl(profile?.avatar_url ?? '')
@@ -38,6 +44,42 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   useEffect(() => {
     setNickname(profile?.username ?? '')
   }, [profile?.username])
+
+  useEffect(() => {
+    setSex(profile?.sex)
+  }, [profile?.sex])
+
+  useEffect(() => {
+    setAge(profile?.age ? String(profile.age) : '')
+  }, [profile?.age])
+
+  useEffect(() => {
+    setCountry(profile?.country ?? '')
+  }, [profile?.country])
+
+  async function saveSex() {
+    setSexErr(null)
+    if (!sex) {
+      setSexErr(t('setup.sexRequired'))
+      return
+    }
+    let ageValue: number | null = null
+    if (age.trim()) {
+      const n = Number(age)
+      if (!Number.isInteger(n) || n < 18 || n > 120) {
+        setSexErr(t('setup.ageInvalid'))
+        return
+      }
+      ageValue = n
+    }
+    const { error } = await updateProfile({ sex, age: ageValue, country: country.trim() || null })
+    if (error) {
+      setSexErr(error.includes('.') ? t(error) : error)
+      return
+    }
+    setSexSaved(true)
+    setTimeout(() => setSexSaved(false), 1500)
+  }
 
   async function saveNickname() {
     setNickErr(null)
@@ -161,6 +203,36 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               </div>
             </>
           )}
+        </section>
+
+        {/* Sesso, età, paese */}
+        <section>
+          <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">
+            {t('settings.sex')}
+          </h3>
+          <SexSelector value={sex} onChange={setSex} />
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <input
+              className="input"
+              type="number"
+              min={18}
+              max={120}
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              placeholder={t('setup.age')}
+            />
+            <input
+              className="input"
+              value={country}
+              maxLength={40}
+              onChange={(e) => setCountry(e.target.value)}
+              placeholder={t('setup.country')}
+            />
+          </div>
+          {sexErr && <p className="mt-1 text-xs text-accent-red">{sexErr}</p>}
+          <button onClick={saveSex} className="btn-ghost mt-2 w-full">
+            {sexSaved ? t('settings.sexSaved') : t('common.save')}
+          </button>
         </section>
 
         {/* Stato */}

@@ -3,6 +3,7 @@ import { useUI } from '../context/UIContext'
 import { useAuth } from '../context/AuthContext'
 import { useI18n } from '../lib/i18n'
 import { Avatar } from './Avatar'
+import { SexBadge } from './SexBadge'
 
 interface OnlineUsersPanelProps {
   /** Se valorizzato, mostra solo gli utenti nella stanza indicata. */
@@ -45,10 +46,11 @@ export function OnlineUsersPanel({ roomSlug }: OnlineUsersPanelProps) {
               ring
             />
             <span className="flex min-w-0 flex-col">
-              <span className="truncate text-sm font-semibold text-ink-200">
-                {u.username}
+              <span className="flex items-center gap-1.5 text-sm font-semibold text-ink-200">
+                <SexBadge sex={u.sex} />
+                <span className="truncate">{u.username}</span>
                 {u.user_id === profile?.id && (
-                  <span className="ml-1 text-xs text-ink-400">({t('common.you')})</span>
+                  <span className="text-xs text-ink-400">({t('common.you')})</span>
                 )}
               </span>
               <span className="flex items-center gap-1 text-xs text-ink-400">

@@ -3,6 +3,13 @@
 
 export type UserStatus = 'online' | 'busy' | 'invisible'
 
+// Sesso auto-dichiarato dall'utente. Obbligatorio in onboarding (lato client),
+// ma facoltativo nel tipo perché il doc profilo viene creato prima della scelta.
+export type Sex = 'male' | 'female' | 'couple' | 'undisclosed'
+
+// Valori consentiti, riusati da UI e validazione client.
+export const SEX_VALUES: Sex[] = ['male', 'female', 'couple', 'undisclosed']
+
 export interface Profile {
   id: string
   username: string
@@ -11,6 +18,12 @@ export interface Profile {
   status: UserStatus
   is_invisible: boolean
   is_guest: boolean
+  /** Sesso auto-dichiarato (obbligatorio in onboarding, opzionale nel modello). */
+  sex?: Sex
+  /** Età opzionale (18-120). */
+  age?: number
+  /** Nazionalità/paese opzionale (testo libero, ≤40 caratteri). */
+  country?: string
   created_at: number
   updated_at: number
 }
@@ -99,6 +112,10 @@ export interface PresenceUser {
   avatar_url: string | null
   status: UserStatus
   is_guest: boolean
+  /** Sesso propagato via presence per l'indicatore in lista (zero letture Firestore). */
+  sex?: Sex
+  age?: number
+  country?: string
   room: string | null
   online_at: number
 }

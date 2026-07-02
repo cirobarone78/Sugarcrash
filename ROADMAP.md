@@ -58,23 +58,18 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
 
 ---
 
-## 🟢 P4 — Profilo utente: sesso obbligatorio + campi opzionali — Opus 4.8 (dati/regole) + Sonnet 5 (UI)
-> Obiettivo: ogni utente (anche ospite) dichiara il sesso; età e nazionalità opzionali.
-> Decisione aperta: **modello A** (campo unico Sesso: Uomo/Donna/Coppia/Non dichiarato)
-> vs **modello B** (Sesso + "Interessato a"). Default proposto: A ora, B dopo.
+## 🟢 P4 — Profilo utente: sesso obbligatorio + campi opzionali — Opus 4.8 ✅ (Modello A)
+> Regole Firestore DA RI-PUBBLICARE in console (validazione campi profilo).
 
-- ⬜ **U1** Modello dati: aggiungere `sex` (obbligatorio) a `profiles`; `age`,
-  `country` opzionali. Aggiornare `Profile` type + Security Rules (valore `sex`
-  in enum consentito; nessun campo sensibile extra obbligatorio).
-- ⬜ **U2** Onboarding: step di scelta sesso in `ProfileSetup` (registrati) e
-  all'ingresso ospite (guest) — bloccante finché non selezionato. i18n EN/IT.
-- ⬜ **U3** UI: indicatore sesso (pallino/lettera colorata o glifo) accanto al
-  nome nella lista utenti online, nel profilo e (facoltativo) nelle bolle.
-  Filtro lista utenti per sesso (nice-to-have).
-- ⬜ **U4** Presence: propagare `sex` (+ eventuale `age`/`country`) nel nodo
-  presence così è visibile senza extra letture Firestore.
-- ⬜ **U5** (opzionale) Data di nascita alla registrazione come deterrente età
-  (non prova legale).
+- ✅ **U1** `sex` enum + `age`/`country` opzionali su `Profile`/`PresenceUser`;
+  regole `profiles` validano i campi se presenti (`profileFieldsOk`).
+- ✅ **U2** Onboarding esteso a TUTTI: `needsProfileSetup` true se manca `sex`.
+  `ProfileSetup` adatta il flusso (registrati: nickname+sesso; ospiti: solo sesso).
+- ✅ **U3** `SexBadge` accanto al nome in lista utenti + profilo (età·nazionalità
+  nel profilo). ⬜ residuo: filtro lista per sesso (nice-to-have).
+- ✅ **U4** Presence propaga `sex`/`age`/`country` (solo se definiti).
+- ⏸️ **U5** Data di nascita alla registrazione (deterrente) — non richiesto ora.
+- ✅ Modifica sesso/età/nazionalità da Impostazioni.
 
 ## 🎥 P5 — Webcam nelle stanze pubbliche (MVP mesh con tetto) — Opus 4.8 (WebRTC) + Sonnet 5 (UI)
 > 1-a-molti via mesh (nessun media server). Qualità RIDOTTA sulle cam pubbliche

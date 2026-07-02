@@ -53,6 +53,10 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
       room: roomRef.current,
       online_at: Date.now(),
     }
+    // Campi opzionali: RTDB rifiuta `undefined`, quindi li aggiungiamo solo se presenti.
+    if (profile.sex) payload.sex = profile.sex
+    if (typeof profile.age === 'number') payload.age = profile.age
+    if (profile.country) payload.country = profile.country
     await set(myRef, payload)
   }, [uid, profile])
 

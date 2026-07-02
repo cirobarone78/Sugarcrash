@@ -21,10 +21,11 @@ import {
   updateDoc,
   runTransaction,
   serverTimestamp,
+  deleteField,
 } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase'
 import { tsToMillis } from '../lib/utils'
-import type { Profile, UserStatus } from '../lib/types'
+import { SEX_VALUES, type Profile, type Sex, type UserStatus } from '../lib/types'
 
 interface AuthContextValue {
   user: User | null
@@ -34,7 +35,7 @@ interface AuthContextValue {
   isGuest: boolean
   needsProfileSetup: boolean
   refreshProfile: () => Promise<void>
-  updateProfile: (patch: Partial<Profile>) => Promise<{ error: string | null }>
+  updateProfile: (patch: ProfilePatch) => Promise<{ error: string | null }>
   setStatus: (status: UserStatus) => Promise<void>
   /** Converte un account ospite in registrato mantenendo uid/profilo/cronologia. */
   upgradeAccount: (
@@ -42,6 +43,12 @@ interface AuthContextValue {
     password: string,
   ) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
+}
+
+// Patch del profilo: age/country accettano `null` per svuotare il campo.
+export type ProfilePatch = Partial<Omit<Profile, 'age' | 'country'>> & {
+  age?: number | null
+  country?: string | null
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -57,6 +64,9 @@ function mapProfile(id: string, data: Record<string, unknown>): Profile {
     status: (data.status as UserStatus) ?? 'online',
     is_invisible: Boolean(data.is_invisible),
     is_guest: Boolean(data.is_guest),
+    sex: SEX_VALUES.includes(data.sex as Sex) ? (data.sex as Sex) : undefined,
+    age: typeof data.age === 'number' ? (data.age as number) : undefined,
+    country: typeof data.country === 'string' ? (data.country as string) : undefined,
     created_at: tsToMillis(data.created_at),
     updated_at: tsToMillis(data.updated_at),
   }
@@ -128,14 +138,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const updateProfile = useCallback(
-    async (patch: Partial<Profile>): Promise<{ error: string | null }> => {
+    async (patch: ProfilePatch): Promise<{ error: string | null }> => {
       if (!user) return { error: 'common.error' }
       const ref = doc(db, 'profiles', user.uid)
+
+      // Normalizza e valida i campi profilo auto-dichiarati (sex/age/country).
+      // Restituisce i campi da scrivere oppure un errore i18n.
+      function collectProfileFields():
+        | { data: Record<string, unknown> }
+        | { error: string } {
+        const out: Record<string, unknown> = {}
+        if (patch.sex !== undefined) {
+          if (!SEX_VALUES.includes(patch.sex)) return { error: 'common.error' }
+          out.sex = patch.sex
+        }
+        if (patch.age !== undefined) {
+          // null/undefined dal chiamante = "svuota"; altrimenti intero 18-120.
+          if (patch.age === null) {
+            out.age = deleteField()
+          } else if (!Number.isInteger(patch.age) || patch.age < 18 || patch.age > 120) {
+            return { error: 'setup.ageInvalid' }
+          } else {
+            out.age = patch.age
+          }
+        }
+        if (patch.country !== undefined) {
+          const trimmed = (patch.country ?? '').trim()
+          out.country = trimmed ? trimmed.slice(0, 40) : deleteField()
+        }
+        return { data: out }
+      }
 
       // Cambio username → transazione per garantire l'unicità.
       if (patch.username !== undefined) {
         const newName = patch.username.trim()
         const lower = newName.toLowerCase()
+        const extra = collectProfileFields()
+        if ('error' in extra) return { error: extra.error }
         try {
           await runTransaction(db, async (tx) => {
             // tutte le letture PRIMA delle scritture (requisito Firestore)
@@ -161,6 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 username: newName,
                 username_lower: lower,
                 avatar_url: patch.avatar_url ?? profSnap.data()?.avatar_url ?? null,
+                ...extra.data,
                 updated_at: serverTimestamp(),
               },
               { merge: true },
@@ -174,8 +214,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: null }
       }
 
-      // Altri aggiornamenti (avatar, status, ...)
-      const data: Record<string, unknown> = { updated_at: serverTimestamp() }
+      // Altri aggiornamenti (avatar, status, sex/age/country, ...)
+      const extra = collectProfileFields()
+      if ('error' in extra) return { error: extra.error }
+      const data: Record<string, unknown> = { ...extra.data, updated_at: serverTimestamp() }
       if (patch.avatar_url !== undefined) data.avatar_url = patch.avatar_url
       if (patch.status !== undefined) data.status = patch.status
       if (patch.is_invisible !== undefined) data.is_invisible = patch.is_invisible
@@ -229,9 +271,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const needsProfileSetup = useMemo(() => {
     if (!profile) return false
-    // Gli ospiti entrano subito (nickname auto); solo i registrati devono scegliere.
-    if (profile.is_guest) return false
-    return PROVISIONAL_RE.test(profile.username)
+    // Il sesso è obbligatorio per TUTTI (ospiti inclusi): finché manca, onboarding.
+    if (!profile.sex) return true
+    // I registrati con username provvisorio devono comunque scegliere il nickname.
+    if (!profile.is_guest && PROVISIONAL_RE.test(profile.username)) return true
+    return false
   }, [profile])
 
   const value = useMemo<AuthContextValue>(

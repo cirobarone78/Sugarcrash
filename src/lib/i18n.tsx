@@ -70,6 +70,25 @@ const dict: Record<Lang, Record<string, string>> = {
     'setup.enter': 'Enter chat',
     'setup.saving': 'Saving…',
     'setup.exit': 'Sign out',
+    'setup.guestTitle': 'One quick step',
+    'setup.guestSubtitle': 'Tell us your sex to enter the rooms.',
+    'setup.sex': 'Your sex',
+    'setup.sexHint': 'Required. Shown as a small badge next to your name.',
+    'setup.sexRequired': 'Please select your sex to continue.',
+    'setup.age': 'Age (optional)',
+    'setup.ageInvalid': 'Age must be a whole number between 18 and 120.',
+    'setup.country': 'Country (optional)',
+    'setup.countryPlaceholder': 'e.g. Italy',
+
+    // sex
+    'sex.male': 'Male',
+    'sex.female': 'Female',
+    'sex.couple': 'Couple',
+    'sex.undisclosed': 'Undisclosed',
+    'sex.short.male': 'M',
+    'sex.short.female': 'F',
+    'sex.short.couple': 'C',
+    'sex.short.undisclosed': '?',
 
     // username validation
     'username.tooShort': 'Nickname must be at least 3 characters.',
@@ -202,6 +221,8 @@ const dict: Record<Lang, Record<string, string>> = {
     'settings.unblock': 'Unblock',
     'settings.signout': 'Sign out',
     'settings.language': 'Language',
+    'settings.sex': 'Sex, age & country',
+    'settings.sexSaved': 'Profile updated.',
 
     // upgrade
     'upgrade.title': 'Become a member',
@@ -334,6 +355,24 @@ const dict: Record<Lang, Record<string, string>> = {
     'setup.enter': 'Entra in chat',
     'setup.saving': 'Salvataggio…',
     'setup.exit': 'Esci',
+    'setup.guestTitle': 'Un passaggio veloce',
+    'setup.guestSubtitle': 'Indica il tuo sesso per entrare nelle stanze.',
+    'setup.sex': 'Il tuo sesso',
+    'setup.sexHint': 'Obbligatorio. Mostrato come piccolo badge accanto al nome.',
+    'setup.sexRequired': 'Seleziona il tuo sesso per continuare.',
+    'setup.age': 'Età (opzionale)',
+    'setup.ageInvalid': "L'età dev'essere un numero intero tra 18 e 120.",
+    'setup.country': 'Paese (opzionale)',
+    'setup.countryPlaceholder': 'es. Italia',
+
+    'sex.male': 'Uomo',
+    'sex.female': 'Donna',
+    'sex.couple': 'Coppia',
+    'sex.undisclosed': 'Non dichiarato',
+    'sex.short.male': 'U',
+    'sex.short.female': 'D',
+    'sex.short.couple': 'C',
+    'sex.short.undisclosed': '?',
 
     'username.tooShort': 'Il nickname deve avere almeno 3 caratteri.',
     'username.tooLong': 'Il nickname può avere al massimo 24 caratteri.',
@@ -455,6 +494,8 @@ const dict: Record<Lang, Record<string, string>> = {
     'settings.unblock': 'Sblocca',
     'settings.signout': "Esci dall'account",
     'settings.language': 'Lingua',
+    'settings.sex': 'Sesso, età e paese',
+    'settings.sexSaved': 'Profilo aggiornato.',
 
     'upgrade.title': 'Diventa membro',
     'upgrade.body':

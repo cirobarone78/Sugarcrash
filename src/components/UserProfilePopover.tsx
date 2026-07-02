@@ -10,9 +10,13 @@ import { useBlocks } from '../hooks/useBlocks'
 import { statusColor } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
 import { Icon } from './Icon'
-import type { Profile } from '../lib/types'
+import { SexBadge } from './SexBadge'
+import { SEX_VALUES, type Profile, type Sex } from '../lib/types'
 
-type ProfileLite = Pick<Profile, 'id' | 'username' | 'avatar_url' | 'status' | 'is_guest'>
+type ProfileLite = Pick<
+  Profile,
+  'id' | 'username' | 'avatar_url' | 'status' | 'is_guest' | 'sex' | 'age' | 'country'
+>
 
 interface UserProfilePopoverProps {
   open: boolean
@@ -52,6 +56,9 @@ export function UserProfilePopover({
         avatar_url: presenceUser.avatar_url,
         status: presenceUser.status,
         is_guest: presenceUser.is_guest,
+        sex: presenceUser.sex,
+        age: presenceUser.age,
+        country: presenceUser.country,
       })
       return
     }
@@ -71,6 +78,9 @@ export function UserProfilePopover({
           avatar_url: (d.avatar_url as string | null) ?? null,
           status: (d.status as Profile['status']) ?? 'online',
           is_guest: Boolean(d.is_guest),
+          sex: SEX_VALUES.includes(d.sex as Sex) ? (d.sex as Sex) : undefined,
+          age: typeof d.age === 'number' ? (d.age as number) : undefined,
+          country: typeof d.country === 'string' ? (d.country as string) : undefined,
         })
       })
       .catch(() => setFailed(true))
@@ -91,7 +101,10 @@ export function UserProfilePopover({
           <div className="flex items-center gap-3">
             <Avatar username={profile.username} avatarUrl={profile.avatar_url} size={56} />
             <div>
-              <p className="text-lg font-bold text-white">{profile.username}</p>
+              <p className="flex items-center gap-2 text-lg font-bold text-white">
+                <SexBadge sex={profile.sex} size={18} />
+                {profile.username}
+              </p>
               <p className="flex items-center gap-1 text-sm text-ink-400">
                 <span
                   className="h-2 w-2 rounded-full"
@@ -102,6 +115,11 @@ export function UserProfilePopover({
                   <span className="chip bg-ink-800 text-[9px] text-ink-400">{t('common.guest')}</span>
                 )}
               </p>
+              {(profile.age || profile.country) && (
+                <p className="mt-0.5 text-xs text-ink-400">
+                  {[profile.age, profile.country].filter(Boolean).join(' · ')}
+                </p>
+              )}
             </div>
           </div>
 
