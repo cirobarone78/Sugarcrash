@@ -218,6 +218,13 @@ export function WindowsLayer() {
           </button>
         </div>
 
+        {/* Anteprima della propria webcam mentre si trasmette (solo video). */}
+        {broadcast.mode !== 'audio' && (
+          <div className="mx-auto mt-1.5 w-[min(72vw,220px)] overflow-hidden rounded-2xl border border-white/10 shadow-soft">
+            <LocalVideoPreview stream={broadcast.stream} videoEnabled={broadcast.videoEnabled} />
+          </div>
+        )}
+
         {showViewers && (
           <div className="mt-1.5 max-h-64 overflow-y-auto rounded-2xl border border-white/10 bg-ink-850/95 p-2 shadow-soft backdrop-blur">
             <p className="px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-ink-400">
