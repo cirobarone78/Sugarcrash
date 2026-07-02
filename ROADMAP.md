@@ -68,6 +68,9 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
 - ✅ **U3** `SexBadge` accanto al nome in lista utenti + profilo (età·nazionalità
   nel profilo). ⬜ residuo: filtro lista per sesso (nice-to-have).
 - ✅ **U4** Presence propaga `sex`/`age`/`country` (solo se definiti).
+- ⬜ **U6** Barra utenti: filtro per sesso (Tutti/Uomini/Donne/Coppie) +
+  ordinamento (alfabetico | prima chi ha la webcam accesa). *(dopo P5: stesso
+  file OnlineUsersPanel + usa il flag `cam`)*  — Sonnet 5.
 - ⏸️ **U5** Data di nascita alla registrazione (deterrente) — non richiesto ora.
 - ✅ Modifica sesso/età/nazionalità da Impostazioni.
 
