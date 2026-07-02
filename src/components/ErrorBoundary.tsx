@@ -5,6 +5,8 @@ interface Props {
 }
 interface State {
   hasError: boolean
+  message?: string
+  stack?: string
 }
 
 /**
@@ -16,8 +18,12 @@ interface State {
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false }
 
-  static getDerivedStateFromError(): State {
-    return { hasError: true }
+  static getDerivedStateFromError(error: Error): State {
+    return {
+      hasError: true,
+      message: error?.message ?? String(error),
+      stack: (error?.stack ?? '').split('\n').slice(0, 4).join('\n'),
+    }
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
@@ -62,6 +68,12 @@ export class ErrorBoundary extends Component<Props, State> {
             Clear cache · Svuota cache
           </button>
         </div>
+        {this.state.message && (
+          <pre className="mt-2 max-w-md overflow-x-auto whitespace-pre-wrap rounded-lg bg-ink-950 p-3 text-left text-[11px] text-accent-red/90">
+            {this.state.message}
+            {this.state.stack ? '\n' + this.state.stack : ''}
+          </pre>
+        )}
       </div>
     )
   }
