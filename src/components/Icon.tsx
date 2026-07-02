@@ -30,6 +30,7 @@ export type IconName =
   | 'plus'
   | 'minus'
   | 'trash'
+  | 'sidebar'
   | 'settings'
   | 'globe'
   | 'alert'
@@ -143,6 +144,12 @@ const PATHS: Record<IconName, ReactElement> = {
   check: <path d="M5 12.5l4.5 4.5L19 7" />,
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,
+  sidebar: (
+    <>
+      <rect x="3.5" y="5" width="17" height="14" rx="2.5" />
+      <path d="M9.5 5v14" />
+    </>
+  ),
   trash: (
     <>
       <path d="M4 7h16M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" />

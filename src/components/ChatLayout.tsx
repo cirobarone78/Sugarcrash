@@ -33,6 +33,16 @@ export function ChatLayout() {
   const [createOpen, setCreateOpen] = useState(false)
   const [joinTarget, setJoinTarget] = useState<Room | null>(null)
   const [tab, setTab] = useState<MobileTab>('rooms')
+  // Menu stanze (desktop) comprimibile per dare più spazio alla chat; preferenza salvata.
+  const [roomsOpen, setRoomsOpen] = useState(
+    () => localStorage.getItem('retrocam.roomsOpen') !== 'false',
+  )
+  function toggleRooms() {
+    setRoomsOpen((v) => {
+      localStorage.setItem('retrocam.roomsOpen', String(!v))
+      return !v
+    })
+  }
 
   function enterRoom(room: Room) {
     setSelectedRoom(room)
@@ -65,6 +75,14 @@ export function ChatLayout() {
       {/* Barra superiore */}
       <header className="flex items-center justify-between border-b border-white/[0.06] bg-ink-900/70 px-3 py-2 backdrop-blur-xl">
         <div className="flex items-center gap-2">
+          <button
+            onClick={toggleRooms}
+            className="icon-btn hidden lg:inline-flex"
+            title={roomsOpen ? t('rooms.hide') : t('rooms.show')}
+            aria-label={roomsOpen ? t('rooms.hide') : t('rooms.show')}
+          >
+            <Icon name="sidebar" size={18} />
+          </button>
           <Logo size={28} />
           <span className="text-[15px] font-bold tracking-tight text-white">CamRooms</span>
         </div>
@@ -105,11 +123,16 @@ export function ChatLayout() {
         </div>
       </header>
 
-      {/* Desktop: 3 colonne */}
-      <div className="hidden min-h-0 flex-1 lg:grid lg:grid-cols-[16rem_1fr_16rem]">
-        <div className="overflow-y-auto border-r border-ink-700 bg-ink-900">
-          <RoomList rooms={rooms} selectedRoomId={selectedRoom?.id ?? null} onSelect={selectRoom} />
-        </div>
+      {/* Desktop: colonne (menu stanze comprimibile) */}
+      <div
+        className="hidden min-h-0 flex-1 lg:grid"
+        style={{ gridTemplateColumns: roomsOpen ? '16rem 1fr 16rem' : '1fr 16rem' }}
+      >
+        {roomsOpen && (
+          <div className="overflow-y-auto border-r border-ink-700 bg-ink-900">
+            <RoomList rooms={rooms} selectedRoomId={selectedRoom?.id ?? null} onSelect={selectRoom} />
+          </div>
+        )}
         {/* B1: `center` (RoomChat/useRoomMessages) montato UNA sola volta. */}
         <div className="min-w-0 bg-ink-950">{isDesktop ? center : null}</div>
         <div className="overflow-hidden border-l border-ink-700 bg-ink-900">
