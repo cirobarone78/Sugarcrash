@@ -73,9 +73,9 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
 - ⏸️ **U5** Data di nascita alla registrazione (deterrente) — non richiesto ora.
 - ✅ Modifica sesso/età/nazionalità da Impostazioni.
 
-## 🎥 P5 — Webcam nelle stanze pubbliche (MVP mesh con tetto) — Opus 4.8 ✅
-> Regole `webcamSessions` DA RI-PUBBLICARE (ora consentono anche il 'watch'
-> avviato dallo spettatore). ⚠️ Da testare dal vivo con più dispositivi.
+## 🎥 P5 — Webcam nelle stanze pubbliche (MVP mesh con tetto) — Opus 4.8 ✅ TESTATA OK
+> Testata dal vivo con 2 dispositivi sulla stessa rete: trasmissione + visione
+> multi-spettatore funzionanti. Regole `webcamSessions` pubblicate.
 
 - ✅ **W1** "Vai in onda" (GoLiveButton in RoomHeader, registrati); consenso
   con scelta **video** o **solo audio**; flag presence `cam`.
@@ -87,8 +87,13 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
 - ✅ **W5** Lista spettatori con espelli/blocca; indicatore "Sei in onda" + Stop.
 - ✅ **W6** Regole `webcamSessions`: consentito sia invite 1:1 (broadcaster) sia
   watch pubblico (viewer); blocco → espulsione automatica.
-- ⚠️ Scala: oltre il mesh serve un **SFU** (a pagamento) — fase futura.
-- ⚠️ Da validare con test multi-dispositivo (WebRTC mesh).
+- ✅ Fix WebRTC (debug live): signaling serializzato + coda candidati ICE;
+  listener broadcaster stabile (una sottoscrizione) + baseline snapshot iniziale
+  (no spettatori fantasma / no dipendenza dall'orologio); query broadcaster
+  conforme alle regole (`participants array-contains`); provider order
+  (WebcamProvider sopra UIProvider); ErrorBoundary anti pagina-vuota.
+- ⏸️ Scala: oltre il mesh serve un **SFU** (a pagamento) — fase futura.
+  TURN (relay) se servisse su reti NAT difficili (finora STUN basta su stessa rete).
 
 ---
 
