@@ -34,6 +34,16 @@ const dict: Record<Lang, Record<string, string>> = {
       'This platform contains dating and flirty (adult) rooms. By entering you confirm you are at least 18 years old. Note: without ID verification, age cannot be technically guaranteed.',
     'age.confirm': 'I am 18 or older — enter',
     'age.exit': 'Leave',
+    'seo.h2': 'What is CamRooms?',
+    'seo.p1':
+      'CamRooms is a real-time chat platform — the spirit of the old webchats, but modern and secure. Join themed public rooms, chat in groups, see who is online, send private 1:1 messages, share your webcam and meet new people at random with cam-roulette.',
+    'seo.featTitle': 'What you can do',
+    'seo.f1': 'Themed public chatrooms in real time',
+    'seo.f2': 'Private 1:1 messages, with images',
+    'seo.f3': 'Optional webcam (WebRTC) in rooms and 1:1',
+    'seo.f4': 'Cam-roulette: meet a stranger on cam, tap Next',
+    'seo.f5': 'Friends list, blocking and reporting for safety',
+    'seo.free': 'Free to use. Guest access or sign up to keep your chats across devices. Adults only (18+).',
     'age.exited': 'You have left. Come back when you are 18+.',
 
     // auth
@@ -389,6 +399,16 @@ const dict: Record<Lang, Record<string, string>> = {
       'Questa piattaforma contiene stanze di dating e flirt (per adulti). Entrando confermi di avere almeno 18 anni. Nota: senza verifica documenti, l’età non è tecnicamente garantibile.',
     'age.confirm': 'Ho almeno 18 anni — entra',
     'age.exit': 'Esci',
+    'seo.h2': 'Cos’è CamRooms?',
+    'seo.p1':
+      'CamRooms è una piattaforma di chat in tempo reale — lo spirito delle vecchie webchat, ma moderna e sicura. Entra nelle stanze pubbliche a tema, chatta in gruppo, guarda chi è online, invia messaggi privati 1:1, condividi la tua webcam e conosci gente nuova a caso con la cam-roulette.',
+    'seo.featTitle': 'Cosa puoi fare',
+    'seo.f1': 'Chatroom pubbliche a tema in tempo reale',
+    'seo.f2': 'Messaggi privati 1:1, con immagini',
+    'seo.f3': 'Webcam opzionale (WebRTC) nelle stanze e 1:1',
+    'seo.f4': 'Cam-roulette: incontra uno sconosciuto in cam, tocca Avanti',
+    'seo.f5': 'Lista amici, blocco e segnalazione per la sicurezza',
+    'seo.free': 'Gratis. Entra come ospite o registrati per conservare le chat su tutti i dispositivi. Solo per adulti (18+).',
     'age.exited': 'Sei uscito. Torna quando avrai 18 anni.',
 
     'auth.signin': 'Accedi',
