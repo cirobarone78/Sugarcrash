@@ -63,8 +63,21 @@ export function GoLiveButton({ roomName }: { roomName: string }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
 
-  // Trasmettere è riservato agli utenti registrati.
-  if (isGuest) return null
+  // Trasmettere è riservato agli utenti registrati: per gli ospiti mostriamo il
+  // pulsante disattivato con spiegazione (così non sembra sparito e invita a
+  // registrarsi) invece di nasconderlo.
+  if (isGuest) {
+    return (
+      <button
+        disabled
+        className="inline-flex items-center gap-1.5 rounded-full bg-ink-800 px-2.5 py-1 text-xs font-semibold text-ink-500"
+        title={t('cam.goLiveGuest')}
+      >
+        <Icon name="video" size={15} />
+        {t('cam.goLive')}
+      </button>
+    )
+  }
 
   // Webcam non supportata dal browser (es. PWA standalone su iOS vecchi):
   // mostriamo il pulsante disattivato con spiegazione invece di nasconderlo.

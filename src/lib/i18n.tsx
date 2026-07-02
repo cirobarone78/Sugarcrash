@@ -304,6 +304,7 @@ const dict: Record<Lang, Record<string, string>> = {
 
     // webcam — public broadcast (P5)
     'cam.goLive': 'Go live',
+    'cam.goLiveGuest': 'Sign up to broadcast your webcam',
     'cam.goLiveTitle': 'Go live in the room — read this first',
     'cam.goLiveIntro': 'You are about to broadcast to everyone in {room}. The broadcast is ',
     'cam.modeVideo': 'Video + audio',
@@ -595,6 +596,7 @@ const dict: Record<Lang, Record<string, string>> = {
 
     // webcam — broadcast pubblico (P5)
     'cam.goLive': 'Vai in onda',
+    'cam.goLiveGuest': 'Registrati per trasmettere la webcam',
     'cam.goLiveTitle': 'Vai in onda nella stanza — leggi prima questo',
     'cam.goLiveIntro': 'Stai per trasmettere a tutti in {room}. La trasmissione è ',
     'cam.modeVideo': 'Video + audio',
