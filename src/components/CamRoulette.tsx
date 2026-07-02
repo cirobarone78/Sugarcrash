@@ -8,6 +8,40 @@ import { useI18n } from '../lib/i18n'
 import { Icon } from './Icon'
 import { LocalVideoPreview } from './LocalVideoPreview'
 import { SexBadge } from './SexBadge'
+import type { MatchPref } from '../context/RouletteContext'
+
+const PREF_OPTIONS: MatchPref[] = ['any', 'female', 'male', 'couple']
+
+/** Selettore "voglio incontrare" a pillole. */
+function PrefSelector({
+  value,
+  onChange,
+  compact,
+}: {
+  value: MatchPref
+  onChange: (p: MatchPref) => void
+  compact?: boolean
+}) {
+  const { t } = useI18n()
+  return (
+    <div className={`flex flex-wrap justify-center gap-1.5 ${compact ? '' : 'w-full'}`}>
+      {PREF_OPTIONS.map((p) => (
+        <button
+          key={p}
+          onClick={() => onChange(p)}
+          className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+            value === p
+              ? 'bg-brand-500 text-white'
+              : 'bg-ink-800 text-ink-300 hover:bg-ink-700'
+          }`}
+          aria-pressed={value === p}
+        >
+          {t(`roulette.pref.${p}`)}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 /** Video remoto (partner). Non mutato: si sente l'audio dell'altro. */
 function RemoteVideo({ stream }: { stream: MediaStream | null }) {
@@ -115,6 +149,13 @@ export function CamRoulette() {
               <Icon name="camera" size={30} />
             </span>
             <p className="text-sm text-ink-300">{t('roulette.intro')}</p>
+            <div className="w-full space-y-1.5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
+                {t('roulette.pref')}
+              </p>
+              <PrefSelector value={r.pref} onChange={r.setPref} />
+              <p className="text-[11px] text-ink-500">{t('roulette.prefHint')}</p>
+            </div>
             {r.error && <p className="text-sm text-accent-red">{r.error}</p>}
             <button onClick={() => void r.start()} className="btn-primary px-8 py-3 text-base">
               {t('roulette.start')}
@@ -127,11 +168,14 @@ export function CamRoulette() {
               {r.status === 'connected' && r.remoteStream ? (
                 <RemoteVideo stream={r.remoteStream} />
               ) : (
-                <div className="flex h-full flex-col items-center justify-center gap-3 bg-black text-ink-300">
+                <div className="flex h-full flex-col items-center justify-center gap-3 bg-black px-4 text-ink-300">
                   <span className="h-10 w-10 animate-spin rounded-full border-2 border-ink-600 border-t-brand-400" />
                   <span className="text-sm">
                     {r.status === 'searching' ? t('roulette.searching') : t('cam.connecting')}
                   </span>
+                  {r.status === 'searching' && (
+                    <PrefSelector value={r.pref} onChange={r.setPref} compact />
+                  )}
                 </div>
               )}
 

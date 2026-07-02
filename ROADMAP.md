@@ -115,7 +115,11 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
   (transazioni atomiche + onDisconnect), webcam **bidirezionale** (una sola
   peer connection sendrecv), "Avanti"/Stop, mute/video, blocca/segnala, skip di
   30s per non ri-pescare lo stesso utente. Solo registrati. Regole RTDB `roulette`
-  aggiunte — **DA RI-PUBBLICARE** (Realtime Database → Regole).
+  pubblicate.
+  - ✅ **Filtro preferenza reciproco** ("Voglio incontrare": Tutti/Donne/Uomini/
+    Coppie): l'abbinamento avviene solo se compatibile da ENTRAMBI i lati (io
+    voglio il suo sesso E lui il mio); preferenza in `retrocam.roulettePref`,
+    modificabile anche mentre cerchi.
 - ⬜ Moderazione/sicurezza come feature (già: block/report/watermark) da valorizzare.
 - ⏸️ **Stima età dal volto**: valutata e NON consigliata ora. Gratis+affidabile
   non coesistono (modelli in-browser ±4-8 anni = falsa sicurezza); soluzioni serie

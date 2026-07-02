@@ -157,6 +157,12 @@ const dict: Record<Lang, Record<string, string>> = {
     'roulette.stop': 'Stop',
     'roulette.stranger': 'Stranger',
     'roulette.guestOnly': 'Sign up to use Cam Roulette.',
+    'roulette.pref': 'I want to meet',
+    'roulette.pref.any': 'Anyone',
+    'roulette.pref.female': 'Women',
+    'roulette.pref.male': 'Men',
+    'roulette.pref.couple': 'Couples',
+    'roulette.prefHint': 'Matching is mutual: you only meet people whose choice matches yours too.',
 
     // online users
     'users.title': 'Online users',
@@ -478,6 +484,12 @@ const dict: Record<Lang, Record<string, string>> = {
     'roulette.stop': 'Stop',
     'roulette.stranger': 'Sconosciuto',
     'roulette.guestOnly': 'Registrati per usare Cam Roulette.',
+    'roulette.pref': 'Voglio incontrare',
+    'roulette.pref.any': 'Tutti',
+    'roulette.pref.female': 'Donne',
+    'roulette.pref.male': 'Uomini',
+    'roulette.pref.couple': 'Coppie',
+    'roulette.prefHint': 'L’abbinamento è reciproco: incontri solo chi ha scelto in modo compatibile con te.',
 
     'users.title': 'Utenti online',
     'users.empty': 'Nessuno qui per ora.',

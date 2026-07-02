@@ -39,6 +39,12 @@ import type { Sex } from '../lib/types'
 
 type Status = 'idle' | 'searching' | 'connected'
 
+// Preferenza "voglio incontrare": 'any' o un sesso specifico. L'abbinamento è
+// RECIPROCO — avviene solo se la scelta è compatibile da entrambi i lati.
+export type MatchPref = 'any' | 'male' | 'female' | 'couple'
+
+const PREF_KEY = 'retrocam.roulettePref'
+
 interface Partner {
   id: string
   username: string
@@ -56,6 +62,8 @@ interface PairRecord {
 interface WaitingEntry {
   username?: string
   sex?: Sex | null
+  /** Chi vuole incontrare chi è in coda (default 'any'). */
+  want?: MatchPref
   ts?: number
 }
 
@@ -68,6 +76,8 @@ interface RouletteContextValue {
   supported: boolean
   panelOpen: boolean
   status: Status
+  pref: MatchPref
+  setPref: (p: MatchPref) => void
   partner: Partner | null
   connState: RTCPeerConnectionState
   localStream: MediaStream | null
@@ -98,6 +108,9 @@ export function RouletteProvider({ children }: { children: ReactNode }) {
 
   const [panelOpen, setPanelOpen] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
+  const [pref, setPrefState] = useState<MatchPref>(
+    () => (localStorage.getItem(PREF_KEY) as MatchPref) || 'any',
+  )
   const [partner, setPartner] = useState<Partner | null>(null)
   const [connState, setConnState] = useState<RTCPeerConnectionState>('new')
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
@@ -114,10 +127,14 @@ export function RouletteProvider({ children }: { children: ReactNode }) {
   const pairUnsub = useRef<Unsubscribe | null>(null)
   const waitingUnsub = useRef<Unsubscribe | null>(null)
   const isBlockedRef = useRef(isBlocked)
+  const prefRef = useRef(pref)
 
   useEffect(() => {
     isBlockedRef.current = isBlocked
   }, [isBlocked])
+  useEffect(() => {
+    prefRef.current = pref
+  }, [pref])
   const setStatusBoth = useCallback((s: Status) => {
     statusRef.current = s
     setStatus(s)
@@ -129,7 +146,11 @@ export function RouletteProvider({ children }: { children: ReactNode }) {
     const wref = ref(rtdb, `roulette/waiting/${myId}`)
     await onDisconnect(wref).remove()
     await onDisconnect(ref(rtdb, `roulette/pairs/${myId}`)).remove()
-    const entry: Record<string, unknown> = { username: profile?.username ?? '', ts: Date.now() }
+    const entry: Record<string, unknown> = {
+      username: profile?.username ?? '',
+      want: prefRef.current,
+      ts: Date.now(),
+    }
     if (profile?.sex) entry.sex = profile.sex
     await set(wref, entry).catch(() => undefined)
   }, [myId, profile?.username, profile?.sex])
@@ -146,10 +167,19 @@ export function RouletteProvider({ children }: { children: ReactNode }) {
       if (pairs[myId]) return // già abbinato
       if (!waiting[myId]) return // non più in coda
       const skip = recentRef.current
-      const cands = Object.keys(waiting).filter(
-        (id) => id !== myId && !pairs[id] && !skip.has(id) && !isBlockedRef.current(id),
-      )
-      if (!cands.length) return // nessun candidato: resto in coda
+      const meSex = waiting[myId].sex ?? null
+      const meWant: MatchPref = waiting[myId].want ?? 'any'
+      // Compatibilità RECIPROCA: io devo volere il suo sesso E lui il mio.
+      const cands = Object.keys(waiting).filter((id) => {
+        if (id === myId || pairs[id] || skip.has(id) || isBlockedRef.current(id)) return false
+        const o = waiting[id]
+        const oSex = o.sex ?? null
+        const oWant: MatchPref = o.want ?? 'any'
+        const iWantThem = meWant === 'any' || meWant === oSex
+        const theyWantMe = oWant === 'any' || oWant === meSex
+        return iWantThem && theyWantMe
+      })
+      if (!cands.length) return // nessun candidato compatibile: resto in coda
       cands.sort((a, b) => (waiting[a].ts || 0) - (waiting[b].ts || 0))
       const other = cands[0]
       pairs[myId] = {
@@ -341,6 +371,20 @@ export function RouletteProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const setPref = useCallback(
+    (p: MatchPref) => {
+      prefRef.current = p
+      setPrefState(p)
+      localStorage.setItem(PREF_KEY, p)
+      // Se sto già cercando, aggiorna la mia voce in coda e ritenta subito.
+      if (statusRef.current === 'searching') {
+        void enterWaiting()
+        void tryMatch()
+      }
+    },
+    [enterWaiting, tryMatch],
+  )
+
   // Se sono connesso e blocco il partner altrove, salto.
   useEffect(() => {
     if (status === 'connected' && partner && isBlocked(partner.id)) {
@@ -366,6 +410,8 @@ export function RouletteProvider({ children }: { children: ReactNode }) {
       supported,
       panelOpen,
       status,
+      pref,
+      setPref,
       partner,
       connState,
       localStream,
@@ -382,8 +428,9 @@ export function RouletteProvider({ children }: { children: ReactNode }) {
       toggleVideo,
     }),
     [
-      supported, panelOpen, status, partner, connState, localStream, remoteStream,
-      micOn, videoOn, error, open, close, start, next, stop, toggleMic, toggleVideo,
+      supported, panelOpen, status, pref, setPref, partner, connState, localStream,
+      remoteStream, micOn, videoOn, error, open, close, start, next, stop, toggleMic,
+      toggleVideo,
     ],
   )
 
