@@ -135,6 +135,13 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
     Coppie): l'abbinamento avviene solo se compatibile da ENTRAMBI i lati (io
     voglio il suo sesso E lui il mio); preferenza in `retrocam.roulettePref`,
     modificabile anche mentre cerchi.
+- 🟦 **SEO / acquisizione organica**:
+  - ✅ Meta title/description, **Open Graph + Twitter Card** (anteprime ricche
+    nella condivisione), `canonical` (camrooms.app), `robots.txt`, `sitemap.xml`,
+    hero testuale `<noscript>` crawlabile (l'app è una SPA dietro gate).
+  - ⬜ Da fare TU: inviare il dominio a **Google Search Console** + richiedere
+    l'indicizzazione; costruire backlink. Canali adult (SEO/reti adult/Reddit):
+    i canali mainstream (Google Ads/Meta/store) vietano il 18+.
 - ⬜ Moderazione/sicurezza come feature (già: block/report/watermark) da valorizzare.
 - ⏸️ **Stima età dal volto**: valutata e NON consigliata ora. Gratis+affidabile
   non coesistono (modelli in-browser ±4-8 anni = falsa sicurezza); soluzioni serie
