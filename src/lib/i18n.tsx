@@ -148,6 +148,12 @@ const dict: Record<Lang, Record<string, string>> = {
     // online users
     'users.title': 'Online users',
     'users.empty': 'Nobody here yet.',
+    'users.filter.all': 'All',
+    'users.filter.male': 'Men',
+    'users.filter.female': 'Women',
+    'users.filter.couple': 'Couples',
+    'users.sort.az': 'A-Z',
+    'users.sort.cam': 'Webcam first',
 
     // status
     'status.online': 'Online',
@@ -443,6 +449,12 @@ const dict: Record<Lang, Record<string, string>> = {
 
     'users.title': 'Utenti online',
     'users.empty': 'Nessuno qui per ora.',
+    'users.filter.all': 'Tutti',
+    'users.filter.male': 'Uomini',
+    'users.filter.female': 'Donne',
+    'users.filter.couple': 'Coppie',
+    'users.sort.az': 'A-Z',
+    'users.sort.cam': 'Prima webcam',
 
     'status.online': 'Online',
     'status.busy': 'Occupato',
