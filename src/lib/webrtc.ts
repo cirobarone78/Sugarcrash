@@ -170,6 +170,13 @@ export class WebcamPeer {
   private signaling: SignalingChannel
   private role: 'broadcaster' | 'viewer'
   private negotiated = false
+  // Candidati ICE arrivati PRIMA della descrizione remota: vanno accodati e
+  // aggiunti dopo setRemoteDescription, altrimenti si perdono e la connessione
+  // può non completarsi (causa di fallimenti intermittenti).
+  private pendingIce: RTCIceCandidateInit[] = []
+  // Coda: processa i messaggi di signaling UNO ALLA VOLTA e in ordine, così
+  // 'offer'/'answer' vengono applicati prima degli 'ice' (niente race).
+  private queue: Promise<void> = Promise.resolve()
 
   constructor(
     sessionId: string,
@@ -197,7 +204,19 @@ export class WebcamPeer {
       }
     }
 
-    this.signaling = new SignalingChannel(sessionId, selfId, (m) => void this.onSignal(m))
+    // Serializza il signaling: ogni messaggio è processato dopo il precedente.
+    this.signaling = new SignalingChannel(sessionId, selfId, (m) => {
+      this.queue = this.queue.then(() => this.onSignal(m)).catch(() => undefined)
+    })
+  }
+
+  /** Aggiunge i candidati ICE messi in coda (dopo che la remote description è pronta). */
+  private async flushPendingIce(): Promise<void> {
+    const cands = this.pendingIce
+    this.pendingIce = []
+    for (const c of cands) {
+      await this.pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => undefined)
+    }
   }
 
   async connect(): Promise<void> {
@@ -214,16 +233,20 @@ export class WebcamPeer {
         this.signaling.send({ kind: 'offer', sdp: offer })
       } else if (m.kind === 'offer' && this.role === 'viewer') {
         await this.pc.setRemoteDescription(new RTCSessionDescription(m.sdp))
+        await this.flushPendingIce()
         const answer = await this.pc.createAnswer()
         await this.pc.setLocalDescription(answer)
         this.signaling.send({ kind: 'answer', sdp: answer })
       } else if (m.kind === 'answer' && this.role === 'broadcaster') {
         await this.pc.setRemoteDescription(new RTCSessionDescription(m.sdp))
+        await this.flushPendingIce()
       } else if (m.kind === 'ice') {
-        try {
-          await this.pc.addIceCandidate(new RTCIceCandidate(m.candidate))
-        } catch {
-          // candidato arrivato prima della remote description: ignorabile
+        // Se la remote description non è ancora impostata, accoda il candidato
+        // e aggiungilo dopo (flushPendingIce) invece di scartarlo.
+        if (this.pc.remoteDescription && this.pc.remoteDescription.type) {
+          await this.pc.addIceCandidate(new RTCIceCandidate(m.candidate)).catch(() => undefined)
+        } else {
+          this.pendingIce.push(m.candidate)
         }
       } else if (m.kind === 'bye') {
         this.cb.onBye?.()

@@ -440,6 +440,11 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
           // Ri-applica il tetto di bitrate a negoziazione conclusa (alcuni
           // browser popolano `encodings` solo dopo il primo scambio SDP).
           if (state === 'connected') applyLowBitrate(peer.getPeerConnection())
+          // Peer fallito/chiuso: rimuovilo così non satura il tetto spettatori.
+          if (state === 'failed' || state === 'closed') {
+            void removeViewer(s.id, { markEnded: true })
+            return
+          }
           setBroadcastState((prev) =>
             prev
               ? {
