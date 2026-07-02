@@ -64,7 +64,22 @@ export function GoLiveButton({ roomName }: { roomName: string }) {
   const [open, setOpen] = useState(false)
 
   // Trasmettere è riservato agli utenti registrati.
-  if (isGuest || !supported) return null
+  if (isGuest) return null
+
+  // Webcam non supportata dal browser (es. PWA standalone su iOS vecchi):
+  // mostriamo il pulsante disattivato con spiegazione invece di nasconderlo.
+  if (!supported) {
+    return (
+      <button
+        disabled
+        className="inline-flex items-center gap-1.5 rounded-full bg-ink-800 px-2.5 py-1 text-xs font-semibold text-ink-500"
+        title={t('cam.notSupported')}
+      >
+        <Icon name="video" size={15} />
+        {t('cam.goLive')}
+      </button>
+    )
+  }
 
   return (
     <>
@@ -75,7 +90,7 @@ export function GoLiveButton({ roomName }: { roomName: string }) {
         title={broadcast ? t('cam.alreadyOn') : t('cam.goLive')}
       >
         <Icon name="video" size={15} />
-        <span className="hidden sm:inline">{t('cam.goLive')}</span>
+        {t('cam.goLive')}
       </button>
       <WebcamConsentModal
         open={open}
