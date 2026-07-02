@@ -51,14 +51,17 @@ function AuthedApp() {
       <PresenceProvider>
         <PrivateChatProvider>
           <WindowsProvider>
-            <UIProvider>
-              <WebcamProvider>
+            {/* WebcamProvider sopra UIProvider: UserProfilePopover (reso da
+                UIProvider) usa useWebcam per "Guarda la webcam", quindi deve
+                stare dentro WebcamProvider. */}
+            <WebcamProvider>
+              <UIProvider>
                 <ChatLayout />
                 <WindowsLayer />
                 <PrivateNotifier />
                 <WebcamInviteBanner />
-              </WebcamProvider>
-            </UIProvider>
+              </UIProvider>
+            </WebcamProvider>
           </WindowsProvider>
         </PrivateChatProvider>
       </PresenceProvider>
