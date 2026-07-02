@@ -49,8 +49,9 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
 - ✅ **E4** Lista thread: profili risolti in parallelo (`Promise.all`).
 
 ## ⚪ P3 — Pulizia/refactor — Sonnet 5
-- ⏸️ **C1** Rimuovere `netlify.toml`/`vercel.json`/`signaling/server.js`.
-  *(rimandato: confermare se non si usa Netlify/Vercel)*
+- ✅ **C1** Rimossi `netlify.toml`/`vercel.json` (deploy solo Firebase Hosting);
+  README aggiornato. `signaling/server.js` **mantenuto**: è il signaling server
+  WebSocket alternativo opzionale documentato in `webrtc.ts`/README (non morto).
 - ✅ **C2** Deduplicati (helper): `sendGuard` (rate-limit unificato a 6) e
   `threads` (`privateThreadId`/`ensurePrivateThread`).
   ⬜ residuo: componenti UI duplicati (riga-lista, pannelli webcam) — rimandati

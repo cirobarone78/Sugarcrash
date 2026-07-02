@@ -209,29 +209,19 @@ La PWA è un sito statico (cartella `dist/`). Imposta le variabili `VITE_FIREBAS
 di produzione tra i **domini autorizzati** in Firebase → Authentication →
 Settings → *Authorized domains*.
 
-### Firebase Hosting (consigliato con Firebase)
+### Firebase Hosting
 ```bash
 npm run build
 firebase deploy --only hosting
 ```
 (`firebase.json` è già configurato con publish `dist` e rewrite SPA.)
 
-### Netlify
-1. *Add new site → Import from Git*, seleziona il repo.
-2. Build command: `npm run build` · Publish directory: `dist`
-   (già in [`netlify.toml`](./netlify.toml), incluso il redirect SPA).
-3. *Site settings → Environment variables*: aggiungi le `VITE_FIREBASE_*`.
-4. Deploy.
+Il deploy di produzione avviene via Firebase Hosting (project id
+`retrocam-chat`). Aggiungi le `VITE_FIREBASE_*` come variabili d'ambiente di
+build nel workflow di deploy.
 
-### Vercel
-1. *Add New → Project*, importa il repo.
-2. Framework preset: **Vite** · Build: `npm run build` · Output: `dist`
-   (vedi [`vercel.json`](./vercel.json), include rewrite SPA).
-3. *Settings → Environment Variables*: aggiungi le `VITE_FIREBASE_*`.
-4. Deploy.
-
-> Tutte servono il sito su **HTTPS**: requisito necessario sia per la PWA sia
-> per `getUserMedia` (webcam).
+> Il sito va servito su **HTTPS**: requisito necessario sia per la PWA sia per
+> `getUserMedia` (webcam).
 
 ---
 
@@ -300,7 +290,6 @@ firebase deploy --only hosting
 ├─ firebase.json             # config Firebase (hosting + rules)
 ├─ firebase/                 # firestore.rules + database.rules.json
 ├─ docs/FIREBASE_SETUP.md     # guida passo-passo a Firebase
-├─ netlify.toml / vercel.json
 ├─ scripts/generate-icons.mjs  # genera le icone PWA (no dipendenze)
 ├─ signaling/                # signaling server WebSocket alternativo (opzionale)
 └─ src/
