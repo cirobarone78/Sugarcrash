@@ -4,6 +4,7 @@ import { usePrivateRooms } from '../hooks/usePrivateRooms'
 import { useAuth } from '../context/AuthContext'
 import { usePrivateChat } from '../context/PrivateChatContext'
 import { useWindows } from '../context/WindowsContext'
+import { useRoulette } from '../context/RouletteContext'
 import { useIsDesktop } from '../hooks/useIsDesktop'
 import { RoomList } from './RoomList'
 import { LobbyPage } from './LobbyPage'
@@ -26,6 +27,7 @@ export function ChatLayout() {
   const { profile, isGuest } = useAuth()
   const { totalUnread } = usePrivateChat()
   const { openMessages } = useWindows()
+  const roulette = useRoulette()
   const isDesktop = useIsDesktop()
   const { t } = useI18n()
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
@@ -97,6 +99,14 @@ export function ChatLayout() {
               {t('header.register')}
             </button>
           )}
+          <button
+            onClick={roulette.open}
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-teal-500 to-brand-500 px-3 py-1.5 text-xs font-semibold text-white shadow-glow hover:brightness-110"
+            title={t('roulette.launch')}
+          >
+            <Icon name="camera" size={14} />
+            <span className="hidden sm:inline">{t('roulette.launch')}</span>
+          </button>
           <button
             onClick={openMessages}
             className="relative icon-btn"

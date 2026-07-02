@@ -198,7 +198,11 @@ export class WebcamPeer {
       this.cb.onConnectionStateChange?.(this.pc.connectionState)
     }
 
-    if (role === 'broadcaster' && localStream) {
+    // Chi ha uno stream locale lo invia, a prescindere dal ruolo: così una
+    // sessione BIDIREZIONALE (es. cam-roulette) si ottiene dando lo stream sia
+    // al broadcaster (offerer) sia al viewer (answerer). Nel broadcast pubblico
+    // il viewer riceve `null` e resta in sola ricezione (nessun cambiamento).
+    if (localStream) {
       for (const track of localStream.getTracks()) {
         this.pc.addTrack(track, localStream)
       }

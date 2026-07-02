@@ -7,6 +7,20 @@
         ".validate": "!newData.exists() || (newData.hasChildren(['user_id','username','status']) && newData.child('user_id').val() === $uid)"
       }
     },
+    "roulette": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "waiting": {
+        "$uid": {
+          ".validate": "!newData.exists() || newData.hasChildren(['username','ts'])"
+        }
+      },
+      "pairs": {
+        "$uid": {
+          ".validate": "!newData.exists() || newData.hasChildren(['sessionId','peerId','role'])"
+        }
+      }
+    },
     "signals": {
       "$sessionId": {
         ".read": "auth != null && data.child('participants').child(auth.uid).exists()",

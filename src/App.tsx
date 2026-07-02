@@ -6,6 +6,7 @@ import { WindowsProvider } from './context/WindowsContext'
 import { BlocksProvider } from './hooks/useBlocks'
 import { UIProvider } from './context/UIContext'
 import { WebcamProvider } from './context/WebcamContext'
+import { RouletteProvider } from './context/RouletteContext'
 import { I18nProvider, useI18n } from './lib/i18n'
 import { AuthPage } from './components/AuthPage'
 import { ProfileSetup } from './components/ProfileSetup'
@@ -13,6 +14,7 @@ import { ChatLayout } from './components/ChatLayout'
 import { WindowsLayer } from './components/WindowsLayer'
 import { PrivateNotifier } from './components/PrivateNotifier'
 import { WebcamInviteBanner } from './components/WebcamInviteBanner'
+import { CamRoulette } from './components/CamRoulette'
 import { AgeGate } from './components/AgeGate'
 import { isFirebaseConfigured } from './lib/firebase'
 
@@ -55,12 +57,15 @@ function AuthedApp() {
                 UIProvider) usa useWebcam per "Guarda la webcam", quindi deve
                 stare dentro WebcamProvider. */}
             <WebcamProvider>
-              <UIProvider>
-                <ChatLayout />
-                <WindowsLayer />
-                <PrivateNotifier />
-                <WebcamInviteBanner />
-              </UIProvider>
+              <RouletteProvider>
+                <UIProvider>
+                  <ChatLayout />
+                  <WindowsLayer />
+                  <PrivateNotifier />
+                  <WebcamInviteBanner />
+                  <CamRoulette />
+                </UIProvider>
+              </RouletteProvider>
             </WebcamProvider>
           </WindowsProvider>
         </PrivateChatProvider>

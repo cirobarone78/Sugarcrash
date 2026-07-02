@@ -106,7 +106,11 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
 - ⬜ Contro il "ghost town": conteggio online globale, eventi/orari a tema,
   fusione stanze poco frequentate.
 - ⬜ Link diretti a stanza condivisibili + "invita un amico".
-- ⬜ Modalità cam 1-a-1 casuale (gancio virale).
+- ✅ **Cam-roulette 1:1 casuale** (gancio virale): matchmaking su RTDB
+  (transazioni atomiche + onDisconnect), webcam **bidirezionale** (una sola
+  peer connection sendrecv), "Avanti"/Stop, mute/video, blocca/segnala, skip di
+  30s per non ri-pescare lo stesso utente. Solo registrati. Regole RTDB `roulette`
+  aggiunte — **DA RI-PUBBLICARE** (Realtime Database → Regole).
 - ⬜ Moderazione/sicurezza come feature (già: block/report/watermark) da valorizzare.
 - ⏸️ **Stima età dal volto**: valutata e NON consigliata ora. Gratis+affidabile
   non coesistono (modelli in-browser ±4-8 anni = falsa sicurezza); soluzioni serie

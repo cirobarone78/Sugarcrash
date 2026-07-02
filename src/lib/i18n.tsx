@@ -145,6 +145,18 @@ const dict: Record<Lang, Record<string, string>> = {
     'chat.uploadFailed': 'Image upload failed.',
     'chat.invalidImage': '[invalid image]',
     'chat.viewImage': 'View image',
+    'roulette.title': 'Cam Roulette',
+    'roulette.launch': 'Cam Roulette',
+    'roulette.intro':
+      'Get matched with a random person on webcam. Tap Next anytime to move on to the next one.',
+    'roulette.rules':
+      'Be respectful. Nudity toward non-consenting people, minors or illegal content are forbidden and will get you banned. You can Report or Block anyone at any time.',
+    'roulette.start': 'Start',
+    'roulette.searching': 'Looking for someone…',
+    'roulette.next': 'Next',
+    'roulette.stop': 'Stop',
+    'roulette.stranger': 'Stranger',
+    'roulette.guestOnly': 'Sign up to use Cam Roulette.',
 
     // online users
     'users.title': 'Online users',
@@ -449,6 +461,18 @@ const dict: Record<Lang, Record<string, string>> = {
     'chat.uploadFailed': 'Caricamento immagine non riuscito.',
     'chat.invalidImage': '[immagine non valida]',
     'chat.viewImage': 'Apri immagine',
+    'roulette.title': 'Cam Roulette',
+    'roulette.launch': 'Cam Roulette',
+    'roulette.intro':
+      'Vieni abbinato a una persona a caso in webcam. Tocca Avanti quando vuoi per passare alla successiva.',
+    'roulette.rules':
+      'Rispetta gli altri. Nudità verso persone non consenzienti, minori o contenuti illegali sono vietati e comportano il ban. Puoi Segnalare o Bloccare chiunque in qualsiasi momento.',
+    'roulette.start': 'Inizia',
+    'roulette.searching': 'Sto cercando qualcuno…',
+    'roulette.next': 'Avanti',
+    'roulette.stop': 'Stop',
+    'roulette.stranger': 'Sconosciuto',
+    'roulette.guestOnly': 'Registrati per usare Cam Roulette.',
 
     'users.title': 'Utenti online',
     'users.empty': 'Nessuno qui per ora.',
