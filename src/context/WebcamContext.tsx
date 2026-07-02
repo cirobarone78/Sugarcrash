@@ -653,6 +653,15 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
     watchingIdRef.current = watching?.sessionId ?? null
   }, [watching?.sessionId])
 
+  // Ref sempre aggiornato a serveViewer: così il listener sottostante può
+  // dipendere solo da [myId, isLive] e NON ri-sottoscriversi a ogni render
+  // (la ri-sottoscrizione azzerava il "baseline" e faceva ripassare la
+  // richiesta come iniziale → filtrata per orario → non servita).
+  const serveViewerRef = useRef(serveViewer)
+  useEffect(() => {
+    serveViewerRef.current = serveViewer
+  }, [serveViewer])
+
   // Listener dedicato: mentre sono in onda, servo le richieste di visione
   // ('watch' pending verso di me). Attivo solo durante il broadcast.
   useEffect(() => {
@@ -677,8 +686,11 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
           if (change.type !== 'added' && change.type !== 'modified') continue
           const s = mapSession(change.doc.id, change.doc.data())
           if (s.broadcaster_id !== myId || s.kind !== 'watch' || s.status !== 'pending') continue
-          if (isInitial && Date.now() - s.created_at > 30000) continue
-          void serveViewer(s)
+          // Sull'iniziale ignoriamo le sessioni preesistenti (stale). Le nuove
+          // richieste (delta in tempo reale) vengono servite SEMPRE, senza
+          // dipendere dall'orologio del dispositivo.
+          if (isInitial) continue
+          void serveViewerRef.current(s)
         }
       },
       (err) => {
@@ -687,7 +699,7 @@ export function WebcamProvider({ children }: { children: ReactNode }) {
       },
     )
     return () => unsub()
-  }, [myId, isLive, serveViewer])
+  }, [myId, isLive])
 
   // Se blocco uno spettatore mentre sono in onda, chiudo la sua sessione.
   useEffect(() => {
