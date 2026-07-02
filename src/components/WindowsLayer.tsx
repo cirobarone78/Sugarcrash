@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useIsDesktop } from '../hooks/useIsDesktop'
 import { useWindows, type WinOther } from '../context/WindowsContext'
 import { useWebcam } from '../context/WebcamContext'
@@ -55,7 +55,15 @@ export function WindowsLayer() {
     toggleVideo,
     endOutgoing,
     endIncoming,
+    broadcast,
+    stopLive,
+    kickViewer,
+    toggleBroadcastMic,
+    toggleBroadcastVideo,
+    watching,
+    stopWatching,
   } = useWebcam()
+  const [showViewers, setShowViewers] = useState(false)
 
   const resolveOther = (id: string, fallbackName?: string): WinOther => {
     const p = onlineUsers.find((u) => u.user_id === id)
@@ -78,6 +86,13 @@ export function WindowsLayer() {
     else removeGeom('cam-in')
   }, [incoming, ensureGeom, removeGeom])
 
+  // Finestra per il broadcast pubblico che sto guardando (P5, desktop).
+  const watchingId = watching?.sessionId ?? null
+  useEffect(() => {
+    if (watchingId) ensureGeom('watch', { x: 340, y: 90, w: 340, h: 300 })
+    else removeGeom('watch')
+  }, [watchingId, ensureGeom, removeGeom])
+
   // All'accettazione/avvio webcam apri anche la chat con l'interlocutore.
   useEffect(() => {
     if (incoming) openChat(resolveOther(incoming.session.broadcaster_id))
@@ -89,6 +104,7 @@ export function WindowsLayer() {
   }, [outgoing?.session.id])
 
   const camInName = incoming ? resolveOther(incoming.session.broadcaster_id).username : ''
+  const watchName = watching ? resolveOther(watching.broadcasterId).username : ''
 
   // Voci minimizzate per la dock.
   const dock: { id: string; label: string; onRestore: () => void; onClose: () => void }[] = []
@@ -127,9 +143,19 @@ export function WindowsLayer() {
     })
   }
 
+  if (watching && geom['watch']?.min) {
+    dock.push({
+      id: 'watch',
+      label: t('cam.webcamOf', { name: watchName }),
+      onRestore: () => setMin('watch', false),
+      onClose: () => void stopWatching(),
+    })
+  }
+
   const gMessages = geom['messages']
   const gOut = geom['cam-out']
   const gIn = geom['cam-in']
+  const gWatch = geom['watch']
 
   return (
     <>
@@ -147,6 +173,134 @@ export function WindowsLayer() {
           <Icon name="stop" size={13} />
           {t('cam.stop')}
         </button>
+      </div>
+    )}
+
+    {/* P5/W5: indicatore globale broadcast pubblico "Sei in onda · N" con Stop e
+        pannello spettatori (espelli/blocca per singolo). */}
+    {broadcast && (
+      <div className="pointer-events-auto fixed left-1/2 top-3 z-[80] w-[min(94vw,22rem)] -translate-x-1/2">
+        <div className="flex items-center gap-2 rounded-full border border-white/10 bg-ink-850/95 py-1.5 pl-3 pr-1.5 shadow-pill backdrop-blur">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-accent-red" />
+          <Icon
+            name={broadcast.mode === 'audio' ? 'mic' : 'video'}
+            size={15}
+            className="text-accent-orange"
+          />
+          <button
+            onClick={() => setShowViewers((v) => !v)}
+            className="truncate text-xs font-semibold text-ink-200"
+          >
+            {t('cam.onAir')} · {broadcast.viewers.length}
+          </button>
+          {broadcast.mode !== 'audio' && (
+            <button
+              onClick={toggleBroadcastVideo}
+              className="rounded-full p-1 text-ink-300 hover:bg-ink-800 hover:text-white"
+              title={broadcast.videoEnabled ? t('cam.videoToggleOff') : t('cam.videoToggleOn')}
+            >
+              <Icon name={broadcast.videoEnabled ? 'video' : 'videoOff'} size={14} />
+            </button>
+          )}
+          <button
+            onClick={toggleBroadcastMic}
+            className="rounded-full p-1 text-ink-300 hover:bg-ink-800 hover:text-white"
+            title={broadcast.audioEnabled ? t('cam.micOn') : t('cam.micOff')}
+          >
+            <Icon name={broadcast.audioEnabled ? 'mic' : 'micOff'} size={14} />
+          </button>
+          <button
+            onClick={() => void stopLive()}
+            className="flex items-center gap-1 rounded-full bg-accent-red px-2.5 py-1 text-xs font-semibold text-white hover:brightness-110"
+          >
+            <Icon name="stop" size={13} />
+            {t('cam.stop')}
+          </button>
+        </div>
+
+        {showViewers && (
+          <div className="mt-1.5 max-h-64 overflow-y-auto rounded-2xl border border-white/10 bg-ink-850/95 p-2 shadow-soft backdrop-blur">
+            <p className="px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-ink-400">
+              {t('cam.viewers')} · {broadcast.viewers.length}
+            </p>
+            {broadcast.viewers.length === 0 ? (
+              <p className="px-2 py-2 text-xs text-ink-400">{t('cam.noViewers')}</p>
+            ) : (
+              broadcast.viewers.map((v) => {
+                const other = resolveOther(v.viewerId)
+                return (
+                  <div key={v.sessionId} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white/[0.04]">
+                    <Avatar username={other.username} avatarUrl={other.avatar_url} size={26} />
+                    <span className="min-w-0 flex-1 truncate text-sm text-ink-200">{other.username}</span>
+                    <button
+                      onClick={() => openBlock({ id: v.viewerId, username: other.username })}
+                      className="rounded-md p-1 text-ink-400 hover:bg-ink-800 hover:text-white"
+                      title={t('profile.block')}
+                    >
+                      <Icon name="ban" size={14} />
+                    </button>
+                    <button
+                      onClick={() => void kickViewer(v.sessionId)}
+                      className="rounded-md p-1 text-ink-400 hover:bg-ink-800 hover:text-accent-red"
+                      title={t('cam.kick')}
+                    >
+                      <Icon name="close" size={14} />
+                    </button>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
+      </div>
+    )}
+
+    {/* P5/W4: broadcast pubblico che sto guardando — su MOBILE overlay a
+        schermo intero (desktop: finestra flottante 'watch' più sotto). */}
+    {!isDesktop && watching && (
+      <div className="fixed inset-0 z-[70] flex flex-col bg-ink-950 lg:hidden">
+        <div className="flex items-center gap-2 border-b border-white/[0.06] bg-ink-900 px-2 py-2">
+          <button
+            onClick={() => void stopWatching()}
+            className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-800 hover:text-white"
+            aria-label={t('common.back')}
+          >
+            <Icon name="back" size={20} />
+          </button>
+          <span className="flex min-w-0 flex-1 items-center gap-2 text-sm font-semibold text-ink-200">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-red" />
+            <span className="truncate">{t('cam.webcamOf', { name: watchName })}</span>
+          </span>
+          <button
+            onClick={() => openBlock({ id: watching.broadcasterId, username: watchName })}
+            className="rounded-md p-1.5 text-ink-400 hover:bg-ink-800 hover:text-white"
+            title={t('profile.block')}
+          >
+            <Icon name="ban" size={16} />
+          </button>
+          <button
+            onClick={() => openReport({ reportedUserId: watching.broadcasterId, label: watchName })}
+            className="rounded-md p-1.5 text-ink-400 hover:bg-ink-800 hover:text-accent-red"
+            title={t('profile.report')}
+          >
+            <Icon name="flag" size={16} />
+          </button>
+        </div>
+        <div className="flex min-h-0 flex-1 items-center justify-center p-3">
+          <div className="w-full max-w-md">
+            <RemoteVideoViewer
+              stream={watching.remoteStream}
+              connState={watching.connState}
+              watermarkName={profile?.username ?? 'user'}
+              sessionId={watching.sessionId}
+            />
+            <div className="mt-2 flex justify-center">
+              <button onClick={() => void stopWatching()} className="btn-danger px-4 py-1.5 text-xs">
+                {t('cam.stopWatching')}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     )}
 
@@ -307,6 +461,59 @@ export function WindowsLayer() {
               >
                 <Icon name="flag" size={14} />
                 {t('cam.report')}
+              </button>
+            </div>
+          </div>
+        </FloatingWindow>
+      )}
+
+      {/* Finestra: broadcast pubblico che sto guardando (desktop) */}
+      {watching && gWatch && !gWatch.min && (
+        <FloatingWindow
+          x={gWatch.x}
+          y={gWatch.y}
+          z={gWatch.z}
+          w={gWatch.w}
+          h={gWatch.h}
+          minHeight={220}
+          onMove={(x, y) => move('watch', x, y)}
+          onResize={(w, h) => resize('watch', w, h)}
+          onFocus={() => focus('watch')}
+          onMinimize={() => setMin('watch', true)}
+          onClose={() => void stopWatching()}
+          title={
+            <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-ink-200">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-red" />
+              <span className="truncate">{t('cam.webcamOf', { name: watchName })}</span>
+            </span>
+          }
+        >
+          <div className="flex h-full flex-col gap-2 p-2">
+            <div className="min-h-0 flex-1">
+              <RemoteVideoViewer
+                stream={watching.remoteStream}
+                connState={watching.connState}
+                watermarkName={profile?.username ?? 'user'}
+                sessionId={watching.sessionId}
+              />
+            </div>
+            <div className="flex items-center justify-end gap-1.5">
+              <button
+                onClick={() => openBlock({ id: watching.broadcasterId, username: watchName })}
+                className="btn-ghost text-xs"
+              >
+                <Icon name="ban" size={14} />
+                {t('cam.block')}
+              </button>
+              <button
+                onClick={() => openReport({ reportedUserId: watching.broadcasterId, label: watchName })}
+                className="btn-ghost text-xs text-accent-red"
+              >
+                <Icon name="flag" size={14} />
+                {t('cam.report')}
+              </button>
+              <button onClick={() => void stopWatching()} className="btn-danger px-3 py-1 text-xs">
+                {t('cam.stopWatching')}
               </button>
             </div>
           </div>

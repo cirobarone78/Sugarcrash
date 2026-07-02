@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useI18n } from '../lib/i18n'
 import { Avatar } from './Avatar'
 import { SexBadge } from './SexBadge'
+import { Glyph } from './Glyph'
 
 interface OnlineUsersPanelProps {
   /** Se valorizzato, mostra solo gli utenti nella stanza indicata. */
@@ -49,6 +50,14 @@ export function OnlineUsersPanel({ roomSlug }: OnlineUsersPanelProps) {
               <span className="flex items-center gap-1.5 text-sm font-semibold text-ink-200">
                 <SexBadge sex={u.sex} />
                 <span className="truncate">{u.username}</span>
+                {u.cam && (
+                  <Glyph
+                    name="webcam"
+                    color="#f97316"
+                    size={15}
+                    className="shrink-0"
+                  />
+                )}
                 {u.user_id === profile?.id && (
                   <span className="text-xs text-ink-400">({t('common.you')})</span>
                 )}

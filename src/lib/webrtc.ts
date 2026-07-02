@@ -35,6 +35,51 @@ export type SignalMessage =
   | { kind: 'ice'; candidate: RTCIceCandidateInit; from: string }
   | { kind: 'bye'; from: string }
 
+// ── Webcam nelle stanze pubbliche (P5) ──────────────────────────────────────
+// Tetto di spettatori per un broadcast pubblico in mesh: oltre questo numero la
+// sessione viene rifiutata con status 'full'. Il mesh (una connessione 1:1 per
+// spettatore, tutte alimentate dallo stesso stream locale) non scala oltre pochi
+// peer: per numeri più alti serve un SFU (fase futura).
+export const PUBLIC_CAM_CAP = 8
+
+// Vincoli getUserMedia a BASSA qualità per le cam pubbliche: alzano il tetto di
+// spettatori riducendo banda/CPU. La cam privata 1:1 resta a qualità piena.
+export const LOW_VIDEO_CONSTRAINTS: MediaTrackConstraints = {
+  width: { ideal: 320 },
+  height: { ideal: 240 },
+  frameRate: { ideal: 15 },
+}
+
+// Bitrate/framerate massimi applicati ai sender video di ogni peer broadcaster.
+const LOW_MAX_BITRATE = 150_000
+const LOW_MAX_FRAMERATE = 15
+
+/**
+ * Imposta un tetto di bitrate/framerate basso sui sender video di una peer
+ * connection (cam pubblica). Alcuni browser non popolano `encodings` finché non
+ * c'è stata negoziazione: in quel caso lo inizializziamo. Guardia totale: se il
+ * browser non supporta setParameters/encodings, semplicemente non fa nulla.
+ */
+export function applyLowBitrate(pc: RTCPeerConnection): void {
+  try {
+    for (const sender of pc.getSenders()) {
+      if (sender.track?.kind !== 'video') continue
+      const params = sender.getParameters()
+      if (!params.encodings || params.encodings.length === 0) {
+        params.encodings = [{}]
+      }
+      params.encodings[0] = {
+        ...params.encodings[0],
+        maxBitrate: LOW_MAX_BITRATE,
+        maxFramerate: LOW_MAX_FRAMERATE,
+      }
+      void sender.setParameters(params).catch(() => undefined)
+    }
+  } catch {
+    /* browser senza supporto encodings: nessun effetto */
+  }
+}
+
 /** True se il browser supporta WebRTC + getUserMedia. */
 export function isWebRTCSupported(): boolean {
   return (
@@ -194,10 +239,18 @@ export class WebcamPeer {
     return this.pc
   }
 
-  async close(sendBye = true): Promise<void> {
+  /**
+   * Chiude la connessione. `stopTracks` ferma le tracce dei sender: va lasciato
+   * a `true` per la webcam 1:1 (stream dedicato), ma DEVE essere `false` quando
+   * si chiude un singolo peer-spettatore di un broadcast pubblico, perché in
+   * quel caso lo stream è CONDIVISO tra tutti gli spettatori: fermarlo qui lo
+   * spegnerebbe per tutti. Lo stream condiviso va fermato una sola volta, in
+   * `stopLive()`.
+   */
+  async close(sendBye = true, stopTracks = true): Promise<void> {
     if (sendBye) this.signaling.send({ kind: 'bye' })
     try {
-      this.pc.getSenders().forEach((s) => s.track?.stop())
+      if (stopTracks) this.pc.getSenders().forEach((s) => s.track?.stop())
     } catch {
       /* noop */
     }

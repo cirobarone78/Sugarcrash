@@ -52,3 +52,43 @@ export function WebcamLaunchButton({ otherId, otherName }: WebcamLaunchButtonPro
     </>
   )
 }
+
+/**
+ * Pulsante "Vai in onda" per il broadcast pubblico in stanza (P5).
+ * Solo utenti registrati; apre il modale di consenso con scelta video/solo audio.
+ */
+export function GoLiveButton({ roomName }: { roomName: string }) {
+  const { supported, broadcast, hasConsent, giveConsent, goLive } = useWebcam()
+  const { isGuest } = useAuth()
+  const { t } = useI18n()
+  const [open, setOpen] = useState(false)
+
+  // Trasmettere è riservato agli utenti registrati.
+  if (isGuest || !supported) return null
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        disabled={!!broadcast}
+        className="inline-flex items-center gap-1.5 rounded-full bg-accent-orange/15 px-2.5 py-1 text-xs font-semibold text-accent-orange hover:bg-accent-orange/25 disabled:opacity-40"
+        title={broadcast ? t('cam.alreadyOn') : t('cam.goLive')}
+      >
+        <Icon name="video" size={15} />
+        <span className="hidden sm:inline">{t('cam.goLive')}</span>
+      </button>
+      <WebcamConsentModal
+        open={open}
+        onClose={() => setOpen(false)}
+        alreadyConsented={hasConsent}
+        onGiveConsent={giveConsent}
+        variant="broadcast"
+        roomName={roomName}
+        onConfirmMode={(mode) => {
+          setOpen(false)
+          void goLive(mode)
+        }}
+      />
+    </>
+  )
+}

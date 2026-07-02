@@ -1,6 +1,7 @@
 import { usePresence } from '../context/PresenceContext'
 import { useI18n } from '../lib/i18n'
 import { Glyph } from './Glyph'
+import { GoLiveButton } from './WebcamPanel'
 import { roomVisual } from '../lib/roomVisuals'
 import type { Room } from '../lib/types'
 
@@ -43,10 +44,13 @@ export function RoomHeader({ room, onLeave }: RoomHeaderProps) {
           <p className="truncate text-xs text-ink-400">{room.description}</p>
         </div>
       </div>
-      <span className="chip shrink-0 bg-accent-green/15 text-accent-green">
-        <span className="h-1.5 w-1.5 rounded-full bg-accent-green" />
-        {roomCounts[room.slug] ?? 0}
-      </span>
+      <div className="flex shrink-0 items-center gap-2">
+        <GoLiveButton roomName={room.name} />
+        <span className="chip bg-accent-green/15 text-accent-green">
+          <span className="h-1.5 w-1.5 rounded-full bg-accent-green" />
+          {roomCounts[room.slug] ?? 0}
+        </span>
+      </div>
     </div>
   )
 }

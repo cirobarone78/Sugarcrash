@@ -74,31 +74,22 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
 - ⏸️ **U5** Data di nascita alla registrazione (deterrente) — non richiesto ora.
 - ✅ Modifica sesso/età/nazionalità da Impostazioni.
 
-## 🎥 P5 — Webcam nelle stanze pubbliche (MVP mesh con tetto) — Opus 4.8 (WebRTC) + Sonnet 5 (UI)
-> 1-a-molti via mesh (nessun media server). Qualità RIDOTTA sulle cam pubbliche
-> per alzare il tetto spettatori. Solo utenti registrati possono trasmettere.
+## 🎥 P5 — Webcam nelle stanze pubbliche (MVP mesh con tetto) — Opus 4.8 ✅
+> Regole `webcamSessions` DA RI-PUBBLICARE (ora consentono anche il 'watch'
+> avviato dallo spettatore). ⚠️ Da testare dal vivo con più dispositivi.
 
-- ⬜ **W1** "Vai in onda" in stanza: consenso esplicito (riuso WebcamConsentModal),
-  opzione **video** o **solo audio**. Flag in presence `cam: 'video'|'audio'|null`
-  (+ `audio` on/off).
-- ⬜ **W2** Qualità adattiva: cam pubblica a bassa qualità (~320×240, 12-15 fps,
-  ~150 kbps) via `getUserMedia` constraints + `RTCRtpSender.setParameters`
-  (maxBitrate/maxFramerate/scaleResolutionDownBy). Cam privata 1:1 resta a
-  qualità piena.
-- ⬜ **W3** Glifo webcam accanto al nome dei broadcaster nella lista utenti;
-  click sul nome → "Guarda la webcam".
-- ⬜ **W4** Multi-viewer: ogni spettatore apre una sessione 1:1 verso il
-  broadcaster (riuso webcamSessions/WebcamPeer/signaling). **Tetto ~8** viewer
-  (config); oltre → "trasmissione al completo". Viewer vede il flusso in
-  finestra (desktop) / pagina (mobile).
-- ⬜ **W5** Pannello broadcaster: **lista spettatori** (da sessioni attive con
-  broadcaster=me) con **blocca/espelli** per singolo; indicatore globale
-  "Sei in onda · N spettatori" + Stop (estende la pillola di B4).
-- ⬜ **W6** Regole: `webcamSessions` già limita ai partecipanti; verificare che
-  viewer→broadcaster sia consentito e che il blocco reciso chiuda la sessione.
+- ✅ **W1** "Vai in onda" (GoLiveButton in RoomHeader, registrati); consenso
+  con scelta **video** o **solo audio**; flag presence `cam`.
+- ✅ **W2** Qualità ridotta cam pubblica (~320×240, ~150 kbps via
+  `applyLowBitrate`); cam privata 1:1 invariata.
+- ✅ **W3** Glifo webcam accanto al nome; "Guarda la webcam" nel profilo.
+- ✅ **W4** Multi-viewer mesh (`kind:'watch'`), tetto `PUBLIC_CAM_CAP`=8;
+  finestra desktop / overlay mobile.
+- ✅ **W5** Lista spettatori con espelli/blocca; indicatore "Sei in onda" + Stop.
+- ✅ **W6** Regole `webcamSessions`: consentito sia invite 1:1 (broadcaster) sia
+  watch pubblico (viewer); blocco → espulsione automatica.
 - ⚠️ Scala: oltre il mesh serve un **SFU** (a pagamento) — fase futura.
-- ⚠️ Moderazione: watermark (già), report, blocco rapido, ruolo moderatore
-  (futuro) per chiudere stream abusivi.
+- ⚠️ Da validare con test multi-dispositivo (WebRTC mesh).
 
 ---
 

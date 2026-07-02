@@ -23,6 +23,8 @@ interface PresenceContextValue {
   onlineUsers: PresenceUser[]
   roomCounts: Record<string, number>
   setCurrentRoom: (slug: string | null) => void
+  /** Segnala (o azzera) lo stato "in onda" del broadcast pubblico in presence. */
+  setBroadcast: (mode: 'video' | 'audio' | null) => void
 }
 
 const PresenceContext = createContext<PresenceContextValue | undefined>(undefined)
@@ -32,6 +34,9 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
   const [onlineUsers, setOnlineUsers] = useState<PresenceUser[]>([])
   const roomRef = useRef<string | null>(null)
   const connectedRef = useRef(false)
+  // Stato broadcast pubblico ("cam" in presence): non fa parte del profilo,
+  // vive qui e viene ripubblicato quando cambia.
+  const [cam, setCam] = useState<'video' | 'audio' | null>(null)
   const uid = user?.uid ?? null
 
   const pushPresence = useCallback(async () => {
@@ -57,8 +62,10 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
     if (profile.sex) payload.sex = profile.sex
     if (typeof profile.age === 'number') payload.age = profile.age
     if (profile.country) payload.country = profile.country
+    // Flag "in onda": aggiunto solo se attivo (RTDB rifiuta undefined).
+    if (cam) payload.cam = cam
     await set(myRef, payload)
-  }, [uid, profile])
+  }, [uid, profile, cam])
 
   // Ascolta lo stato di connessione e l'elenco presenze.
   useEffect(() => {
@@ -100,6 +107,12 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
     [pushPresence],
   )
 
+  // La ri-pubblicazione avviene tramite l'effetto su pushPresence (che dipende
+  // da cam): qui basta aggiornare lo stato.
+  const setBroadcast = useCallback((mode: 'video' | 'audio' | null) => {
+    setCam(mode)
+  }, [])
+
   const roomCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     for (const u of onlineUsers) {
@@ -109,8 +122,8 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
   }, [onlineUsers])
 
   const value = useMemo<PresenceContextValue>(
-    () => ({ onlineUsers, roomCounts, setCurrentRoom }),
-    [onlineUsers, roomCounts, setCurrentRoom],
+    () => ({ onlineUsers, roomCounts, setCurrentRoom, setBroadcast }),
+    [onlineUsers, roomCounts, setCurrentRoom, setBroadcast],
   )
 
   return <PresenceContext.Provider value={value}>{children}</PresenceContext.Provider>

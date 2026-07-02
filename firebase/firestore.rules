@@ -179,13 +179,25 @@ service cloud.firestore {
       }
     }
 
-    // sessioni webcam: solo i due partecipanti; chi è bloccato non può invitare
+    // sessioni webcam: solo i due partecipanti.
+    // Creazione consentita in DUE modi (P5):
+    //  - invito 1:1 ('invite'): lo crea il BROADCASTER (registrato), verso un
+    //    viewer che non lo ha bloccato;
+    //  - visione pubblica ('watch'): lo crea il VIEWER (anche ospite) verso un
+    //    broadcaster che non lo ha bloccato.
+    // In entrambi i casi il chiamante dev'essere tra i participants.
     match /webcamSessions/{sessionId} {
       allow read: if signedIn() && uid() in resource.data.participants;
-      allow create: if isRegistered()
-        && request.resource.data.broadcaster_id == uid()
+      allow create: if signedIn()
         && uid() in request.resource.data.participants
-        && !blockedByCurrent(request.resource.data.viewer_id);
+        && (
+          (request.resource.data.broadcaster_id == uid()
+            && isRegistered()
+            && !blockedByCurrent(request.resource.data.viewer_id))
+          ||
+          (request.resource.data.viewer_id == uid()
+            && !blockedByCurrent(request.resource.data.broadcaster_id))
+        );
       allow update: if signedIn() && uid() in resource.data.participants;
       allow delete: if false;
     }

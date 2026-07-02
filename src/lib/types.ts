@@ -91,6 +91,15 @@ export type WebcamStatus =
   | 'declined'
   | 'ended'
   | 'cancelled'
+  | 'full'
+
+// Tipo di sessione webcam:
+// - 'invite': flusso 1:1 privato (il broadcaster crea, il viewer riceve il
+//   banner d'invito e accetta).
+// - 'watch': broadcast pubblico in stanza (il VIEWER crea la sessione, il
+//   broadcaster serve automaticamente lo stream, nessun banner d'invito).
+// I documenti senza `kind` (creati prima di P5) sono trattati come 'invite'.
+export type WebcamKind = 'invite' | 'watch'
 
 export interface WebcamSession {
   id: string
@@ -99,6 +108,7 @@ export interface WebcamSession {
   viewer_id: string
   participants: string[]
   audio_enabled: boolean
+  kind: WebcamKind
   status: WebcamStatus
   created_at: number
   accepted_at: number | null
@@ -116,6 +126,8 @@ export interface PresenceUser {
   sex?: Sex
   age?: number
   country?: string
+  /** Se l'utente è in onda in una stanza pubblica: tipo di broadcast attivo. */
+  cam?: 'video' | 'audio'
   room: string | null
   online_at: number
 }

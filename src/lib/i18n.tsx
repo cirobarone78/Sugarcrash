@@ -296,6 +296,21 @@ const dict: Record<Lang, Record<string, string>> = {
     'cam.broadcasting': 'Your camera is on',
     'cam.stop': 'Stop',
 
+    // webcam — public broadcast (P5)
+    'cam.goLive': 'Go live',
+    'cam.goLiveTitle': 'Go live in the room — read this first',
+    'cam.goLiveIntro': 'You are about to broadcast to everyone in {room}. The broadcast is ',
+    'cam.modeVideo': 'Video + audio',
+    'cam.modeAudioOnly': 'Audio only',
+    'cam.onAir': 'On air',
+    'cam.viewers': 'Viewers',
+    'cam.noViewers': 'No viewers yet.',
+    'cam.kick': 'Remove viewer',
+    'cam.full': 'This broadcast is full.',
+    'cam.watch': 'Watch webcam',
+    'cam.stopWatching': 'Stop watching',
+    'cam.liveGlyph': 'Live now',
+
     // config notice
     'config.title': '⚙️ Configuration required',
     'config.body':
@@ -565,6 +580,21 @@ const dict: Record<Lang, Record<string, string>> = {
     'cam.err.invite': "Impossibile inviare l'invito (l'utente potrebbe averti bloccato).",
     'cam.broadcasting': 'La tua webcam è attiva',
     'cam.stop': 'Ferma',
+
+    // webcam — broadcast pubblico (P5)
+    'cam.goLive': 'Vai in onda',
+    'cam.goLiveTitle': 'Vai in onda nella stanza — leggi prima questo',
+    'cam.goLiveIntro': 'Stai per trasmettere a tutti in {room}. La trasmissione è ',
+    'cam.modeVideo': 'Video + audio',
+    'cam.modeAudioOnly': 'Solo audio',
+    'cam.onAir': 'Sei in onda',
+    'cam.viewers': 'Spettatori',
+    'cam.noViewers': 'Ancora nessuno spettatore.',
+    'cam.kick': 'Espelli spettatore',
+    'cam.full': 'Questa trasmissione è al completo.',
+    'cam.watch': 'Guarda la webcam',
+    'cam.stopWatching': 'Smetti di guardare',
+    'cam.liveGlyph': 'In onda ora',
 
     'config.title': '⚙️ Configurazione necessaria',
     'config.body':

@@ -6,6 +6,7 @@ import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { useWindows } from '../context/WindowsContext'
 import { usePresence } from '../context/PresenceContext'
+import { useWebcam } from '../context/WebcamContext'
 import { useBlocks } from '../hooks/useBlocks'
 import { statusColor } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
@@ -36,6 +37,7 @@ export function UserProfilePopover({
   const { profile: me, isGuest: meIsGuest } = useAuth()
   const { openChat } = useWindows()
   const { onlineUsers } = usePresence()
+  const { watchBroadcast } = useWebcam()
   const { isBlocked, unblock } = useBlocks()
   const { t } = useI18n()
   const [profile, setProfile] = useState<ProfileLite | null>(null)
@@ -89,6 +91,8 @@ export function UserProfilePopover({
 
   const isSelf = userId === me?.id
   const pmDisabled = meIsGuest || Boolean(profile?.is_guest)
+  // Se l'utente è in onda in una stanza pubblica, mostriamo "Guarda la webcam".
+  const liveCam = presenceUser?.cam ?? null
 
   return (
     <Modal open={open} onClose={onClose} title={t('profile.title')}>
@@ -127,6 +131,18 @@ export function UserProfilePopover({
             <p className="text-sm text-ink-400">{t('profile.you')}</p>
           ) : (
             <div className="space-y-2">
+              {liveCam && !isBlocked(profile.id) && (
+                <button
+                  className="btn-primary w-full"
+                  onClick={() => {
+                    void watchBroadcast(profile.id, liveCam)
+                    onClose()
+                  }}
+                >
+                  <Icon name="video" size={16} />
+                  {t('cam.watch')}
+                </button>
+              )}
               {pmDisabled ? (
                 <p className="rounded-lg bg-ink-850 px-3 py-2 text-center text-xs text-ink-400">
                   {meIsGuest ? t('profile.guestSelf') : t('profile.guestOther')}
