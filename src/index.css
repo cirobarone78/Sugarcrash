@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #0b1120;
+  color: #eaf0fb;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.01em;
+}
+
+/* Scrollbar discreta */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a3860 transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #24304e;
+  border-radius: 999px;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-brand-500 text-white shadow-glow hover:bg-brand-400;
+  }
+  .btn-ghost {
+    @apply btn bg-ink-800 text-ink-200 hover:bg-ink-700;
+  }
+  .btn-danger {
+    @apply btn bg-accent-red text-white hover:brightness-110;
+  }
+  /* Bottone azione circolare colorato (stile "AURA": mic/cam/send…) */
+  .fab {
+    @apply inline-flex h-11 w-11 items-center justify-center rounded-full text-white shadow-pill transition-transform active:scale-90;
+  }
+  .icon-btn {
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-full bg-ink-800 text-ink-200 transition-colors hover:bg-ink-700 disabled:opacity-40;
+  }
+  .input {
+    @apply w-full rounded-xl border border-ink-700 bg-ink-900 px-3.5 py-2.5 text-sm text-ink-200 outline-none transition-colors placeholder:text-ink-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25;
+  }
+  .card {
+    @apply rounded-2xl border border-white/[0.06] bg-ink-850;
+  }
+  .panel {
+    @apply bg-ink-900;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+}

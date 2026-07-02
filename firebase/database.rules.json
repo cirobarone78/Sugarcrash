@@ -1,0 +1,44 @@
+{
+  "rules": {
+    "status": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "!newData.exists() || (newData.hasChildren(['user_id','username','status']) && newData.child('user_id').val() === $uid)"
+      }
+    },
+    "roulette": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "waiting": {
+        "$uid": {
+          ".validate": "!newData.exists() || newData.hasChildren(['username','ts'])"
+        }
+      },
+      "pairs": {
+        "$uid": {
+          ".validate": "!newData.exists() || newData.hasChildren(['sessionId','peerId','role'])"
+        }
+      }
+    },
+    "signals": {
+      "$sessionId": {
+        ".read": "auth != null && data.child('participants').child(auth.uid).exists()",
+        ".write": "auth != null && (!data.exists() || data.child('participants').child(auth.uid).exists() || newData.child('participants').child(auth.uid).exists())",
+        "participants": {
+          "$uid": {
+            ".validate": "newData.isBoolean() && $uid === auth.uid"
+          }
+        },
+        "msgs": {
+          "$msgId": {
+            ".validate": "newData.hasChildren(['kind','from']) && newData.child('from').val() === auth.uid"
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
+  }
+}
