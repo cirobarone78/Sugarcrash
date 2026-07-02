@@ -122,6 +122,11 @@ export function AuthPage() {
             {busy ? t('common.wait') : mode === 'signin' ? t('auth.signin') : t('auth.create')}
           </button>
 
+          <div className="flex items-start gap-2 rounded-lg border border-brand-500/30 bg-brand-500/10 p-2.5 text-xs text-brand-100">
+            <Icon name="sparkle" size={15} className="mt-0.5 shrink-0 text-brand-300" />
+            <span>{t('auth.registerPerk')}</span>
+          </div>
+
           <div className="flex items-center gap-2 py-1">
             <span className="h-px flex-1 bg-ink-700" />
             <span className="text-xs text-ink-400">{t('common.or')}</span>

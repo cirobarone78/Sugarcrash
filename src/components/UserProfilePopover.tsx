@@ -8,9 +8,11 @@ import { useWindows } from '../context/WindowsContext'
 import { usePresence } from '../context/PresenceContext'
 import { useWebcam } from '../context/WebcamContext'
 import { useBlocks } from '../hooks/useBlocks'
+import { useFriends } from '../context/FriendsContext'
 import { statusColor } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
 import { Icon } from './Icon'
+import { Glyph } from './Glyph'
 import { SexBadge } from './SexBadge'
 import { SEX_VALUES, type Profile, type Sex } from '../lib/types'
 
@@ -39,6 +41,7 @@ export function UserProfilePopover({
   const { onlineUsers } = usePresence()
   const { watchBroadcast } = useWebcam()
   const { isBlocked, unblock } = useBlocks()
+  const { stateFor, addFriend, acceptFriend, removeFriend } = useFriends()
   const { t } = useI18n()
   const [profile, setProfile] = useState<ProfileLite | null>(null)
   const [failed, setFailed] = useState(false)
@@ -164,6 +167,14 @@ export function UserProfilePopover({
                   {t('profile.pm')}
                 </button>
               )}
+              {/* Amici (solo tra registrati) */}
+              {!pmDisabled && <FriendControls
+                userId={profile.id}
+                state={stateFor(profile.id)}
+                onAdd={() => void addFriend(profile.id)}
+                onAccept={() => void acceptFriend(profile.id)}
+                onRemove={() => void removeFriend(profile.id)}
+              />}
               {isBlocked(profile.id) ? (
                 <button className="btn-ghost w-full" onClick={() => void unblock(profile.id)}>
                   <Icon name="unlock" size={16} />
@@ -192,5 +203,55 @@ export function UserProfilePopover({
         </div>
       )}
     </Modal>
+  )
+}
+
+function FriendControls({
+  state,
+  onAdd,
+  onAccept,
+  onRemove,
+}: {
+  userId: string
+  state: 'none' | 'friends' | 'incoming' | 'outgoing'
+  onAdd: () => void
+  onAccept: () => void
+  onRemove: () => void
+}) {
+  const { t } = useI18n()
+  if (state === 'friends') {
+    return (
+      <button className="btn-ghost w-full" onClick={onRemove}>
+        <Glyph name="spark" color="#f59e0b" size={16} />
+        {t('friend.remove')}
+      </button>
+    )
+  }
+  if (state === 'incoming') {
+    return (
+      <div className="grid grid-cols-2 gap-2">
+        <button className="btn-primary" onClick={onAccept}>
+          <Icon name="check" size={16} />
+          {t('friend.accept')}
+        </button>
+        <button className="btn-ghost" onClick={onRemove}>
+          {t('friend.decline')}
+        </button>
+      </div>
+    )
+  }
+  if (state === 'outgoing') {
+    return (
+      <button className="btn-ghost w-full" onClick={onRemove}>
+        <Icon name="check" size={16} />
+        {t('friend.pending')} · {t('friend.cancel')}
+      </button>
+    )
+  }
+  return (
+    <button className="btn-ghost w-full" onClick={onAdd}>
+      <Glyph name="spark" color="#f59e0b" size={16} />
+      {t('friend.add')}
+    </button>
   )
 }

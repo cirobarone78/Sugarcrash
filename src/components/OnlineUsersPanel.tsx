@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { usePresence } from '../context/PresenceContext'
 import { useUI } from '../context/UIContext'
 import { useAuth } from '../context/AuthContext'
+import { useFriends } from '../context/FriendsContext'
 import { useI18n } from '../lib/i18n'
 import { Avatar } from './Avatar'
 import { SexBadge } from './SexBadge'
@@ -35,6 +36,7 @@ export function OnlineUsersPanel({ roomSlug }: OnlineUsersPanelProps) {
   const { onlineUsers } = usePresence()
   const { openUserProfile } = useUI()
   const { profile } = useAuth()
+  const { isFriend } = useFriends()
   const { t } = useI18n()
 
   const [filter, setFilter] = useState<SexFilter>(readFilter)
@@ -123,6 +125,9 @@ export function OnlineUsersPanel({ roomSlug }: OnlineUsersPanelProps) {
               <span className="flex items-center gap-1.5 text-sm font-semibold text-ink-200">
                 <SexBadge sex={u.sex} />
                 <span className="truncate">{u.username}</span>
+                {isFriend(u.user_id) && (
+                  <Glyph name="spark" color="#f59e0b" size={13} className="shrink-0" />
+                )}
                 {u.cam && (
                   <Glyph
                     name="webcam"

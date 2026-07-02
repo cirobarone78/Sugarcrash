@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { usePrivateChat } from '../context/PrivateChatContext'
 import { useWindows } from '../context/WindowsContext'
 import { useRoulette } from '../context/RouletteContext'
+import { useFriends } from '../context/FriendsContext'
 import { useIsDesktop } from '../hooks/useIsDesktop'
 import { RoomList } from './RoomList'
 import { LobbyPage } from './LobbyPage'
@@ -28,6 +29,7 @@ export function ChatLayout() {
   const { totalUnread } = usePrivateChat()
   const { openMessages } = useWindows()
   const roulette = useRoulette()
+  const { incoming } = useFriends()
   const isDesktop = useIsDesktop()
   const { t } = useI18n()
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
@@ -121,11 +123,16 @@ export function ChatLayout() {
           </button>
           <button
             onClick={() => setSettingsOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl px-1.5 py-1 hover:bg-ink-800"
+            className="relative flex items-center gap-1.5 rounded-xl px-1.5 py-1 hover:bg-ink-800"
             title={t('header.settings')}
           >
             {profile && (
               <Avatar username={profile.username} avatarUrl={profile.avatar_url} status={profile.status} size={28} showStatus ring />
+            )}
+            {incoming.length > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-green px-1 text-[10px] font-bold text-white">
+                {incoming.length}
+              </span>
             )}
             <span className="hidden text-sm text-ink-200 sm:inline">{profile?.username}</span>
             <span className="h-2 w-2 rounded-full sm:hidden" style={{ background: profile ? statusColor[profile.status] : '#666' }} />

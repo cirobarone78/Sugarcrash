@@ -110,6 +110,15 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
     **Blaze**). Da decidere insieme (vedi Hardening console). Non attivato.
 - ⬜ Contro il "ghost town": conteggio online globale, eventi/orari a tema,
   fusione stanze poco frequentate.
+- ✅ **Amici/preferiti con accettazione reciproca**: `friendships/{a__b}`
+  (un doc per coppia); il richiedente crea `pending`, SOLO l'altro può
+  `accepted`; entrambi possono eliminare. UI: pulsante nel profilo utente
+  (Aggiungi/Accetta/Richiesta inviata/Rimuovi), sezione in Impostazioni
+  (richieste + lista), stellina accanto agli amici in lista utenti, badge sul
+  tasto impostazioni per le richieste in entrata. Regole Firestore `friendships`
+  aggiunte — **DA RI-PUBBLICARE**.
+- ✅ Schermata di accesso: messaggio "registrati per conservare le chat su tutti
+  i dispositivi + lista amici" (spinge la registrazione).
 - ⬜ Link diretti a stanza condivisibili + "invita un amico".
 - ✅ **Cam-roulette 1:1 casuale** (gancio virale): matchmaking su RTDB
   (transazioni atomiche + onDisconnect), webcam **bidirezionale** (una sola

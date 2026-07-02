@@ -228,6 +228,25 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // amici/preferiti (accettazione reciproca). Un doc per coppia, id = uid
+    // ordinati `a__b`. Il richiedente crea 'pending'; SOLO l'altro può portarlo
+    // ad 'accepted'. Entrambi possono eliminare (rifiuta / annulla / rimuovi).
+    match /friendships/{pairId} {
+      allow read: if signedIn() && uid() in resource.data.participants;
+      allow create: if isRegistered()
+        && request.resource.data.requester == uid()
+        && uid() in request.resource.data.participants
+        && request.resource.data.participants.size() == 2
+        && request.resource.data.status == 'pending';
+      allow update: if isRegistered()
+        && uid() in resource.data.participants
+        && uid() != resource.data.requester
+        && request.resource.data.requester == resource.data.requester
+        && request.resource.data.participants == resource.data.participants
+        && request.resource.data.status == 'accepted';
+      allow delete: if signedIn() && uid() in resource.data.participants;
+    }
+
     // segnalazioni: solo creazione da parte del segnalante
     match /reports/{id} {
       allow create: if signedIn() && request.resource.data.reporter_id == uid();

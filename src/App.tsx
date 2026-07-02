@@ -4,6 +4,7 @@ import { PresenceProvider } from './context/PresenceContext'
 import { PrivateChatProvider } from './context/PrivateChatContext'
 import { WindowsProvider } from './context/WindowsContext'
 import { BlocksProvider } from './hooks/useBlocks'
+import { FriendsProvider } from './context/FriendsContext'
 import { UIProvider } from './context/UIContext'
 import { WebcamProvider } from './context/WebcamContext'
 import { RouletteProvider } from './context/RouletteContext'
@@ -50,26 +51,28 @@ function Loading() {
 function AuthedApp() {
   return (
     <BlocksProvider>
-      <PresenceProvider>
-        <PrivateChatProvider>
-          <WindowsProvider>
-            {/* WebcamProvider sopra UIProvider: UserProfilePopover (reso da
-                UIProvider) usa useWebcam per "Guarda la webcam", quindi deve
-                stare dentro WebcamProvider. */}
-            <WebcamProvider>
-              <RouletteProvider>
-                <UIProvider>
-                  <ChatLayout />
-                  <WindowsLayer />
-                  <PrivateNotifier />
-                  <WebcamInviteBanner />
-                  <CamRoulette />
-                </UIProvider>
-              </RouletteProvider>
-            </WebcamProvider>
-          </WindowsProvider>
-        </PrivateChatProvider>
-      </PresenceProvider>
+      <FriendsProvider>
+        <PresenceProvider>
+          <PrivateChatProvider>
+            <WindowsProvider>
+              {/* WebcamProvider sopra UIProvider: UserProfilePopover (reso da
+                  UIProvider) usa useWebcam per "Guarda la webcam", quindi deve
+                  stare dentro WebcamProvider. */}
+              <WebcamProvider>
+                <RouletteProvider>
+                  <UIProvider>
+                    <ChatLayout />
+                    <WindowsLayer />
+                    <PrivateNotifier />
+                    <WebcamInviteBanner />
+                    <CamRoulette />
+                  </UIProvider>
+                </RouletteProvider>
+              </WebcamProvider>
+            </WindowsProvider>
+          </PrivateChatProvider>
+        </PresenceProvider>
+      </FriendsProvider>
     </BlocksProvider>
   )
 }

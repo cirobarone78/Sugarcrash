@@ -18,6 +18,7 @@ import {
 import { statusColor, validateUsername } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
 import { SexSelector } from './SexBadge'
+import { FriendsSection } from './FriendsSection'
 import type { Profile, Sex, UserStatus } from '../lib/types'
 
 interface SettingsPanelProps {
@@ -325,6 +326,9 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             </button>
           </section>
         )}
+
+        {/* Amici (solo registrati) */}
+        {!isGuest && <FriendsSection open={open} />}
 
         {/* Utenti bloccati */}
         <section>

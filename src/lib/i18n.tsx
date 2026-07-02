@@ -46,7 +46,9 @@ const dict: Record<Lang, Record<string, string>> = {
     'auth.create': 'Create account',
     'auth.guest': 'Enter as guest',
     'auth.guestHint':
-      'As a guest you can read and chat in public. Sign up for a reserved nickname, private messages and webcam.',
+      'As a guest you can read and chat in public, but your account stays on this device only.',
+    'auth.registerPerk':
+      'Sign up to keep your private chats on all your devices, get a reserved nickname and a friends list.',
     'auth.terms':
       'By entering you agree to use the platform respectfully. No illegal content, harassment or spam.',
     'auth.err.invalidEmail': 'Invalid email.',
@@ -163,6 +165,17 @@ const dict: Record<Lang, Record<string, string>> = {
     'roulette.pref.male': 'Men',
     'roulette.pref.couple': 'Couples',
     'roulette.prefHint': 'Matching is mutual: you only meet people whose choice matches yours too.',
+    'friend.add': 'Add friend',
+    'friend.pending': 'Request sent',
+    'friend.cancel': 'Cancel request',
+    'friend.accept': 'Accept request',
+    'friend.decline': 'Decline',
+    'friend.remove': 'Remove friend',
+    'friend.friendsChip': 'Friends',
+    'friend.friends': 'Friends',
+    'friend.requests': 'Friend requests',
+    'friend.none': 'No friends yet.',
+    'friend.guestOnly': 'Sign up to add friends.',
 
     // online users
     'users.title': 'Online users',
@@ -378,7 +391,9 @@ const dict: Record<Lang, Record<string, string>> = {
     'auth.create': 'Crea account',
     'auth.guest': 'Entra come ospite',
     'auth.guestHint':
-      'Da ospite puoi leggere e chattare in pubblico. Registrati per nickname riservato, messaggi privati e webcam.',
+      'Da ospite puoi leggere e chattare in pubblico, ma l’account resta solo su questo dispositivo.',
+    'auth.registerPerk':
+      'Registrati per conservare le chat private su tutti i tuoi dispositivi, avere un nickname riservato e la lista amici.',
     'auth.terms':
       'Accedendo accetti di usare la piattaforma nel rispetto degli altri utenti. Niente contenuti illegali, molestie o spam.',
     'auth.err.invalidEmail': 'Email non valida.',
@@ -490,6 +505,17 @@ const dict: Record<Lang, Record<string, string>> = {
     'roulette.pref.male': 'Uomini',
     'roulette.pref.couple': 'Coppie',
     'roulette.prefHint': 'L’abbinamento è reciproco: incontri solo chi ha scelto in modo compatibile con te.',
+    'friend.add': 'Aggiungi agli amici',
+    'friend.pending': 'Richiesta inviata',
+    'friend.cancel': 'Annulla richiesta',
+    'friend.accept': 'Accetta richiesta',
+    'friend.decline': 'Rifiuta',
+    'friend.remove': 'Rimuovi amico',
+    'friend.friendsChip': 'Amici',
+    'friend.friends': 'Amici',
+    'friend.requests': 'Richieste di amicizia',
+    'friend.none': 'Ancora nessun amico.',
+    'friend.guestOnly': 'Registrati per aggiungere amici.',
 
     'users.title': 'Utenti online',
     'users.empty': 'Nessuno qui per ora.',
