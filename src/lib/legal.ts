@@ -1,11 +1,10 @@
 // Testi legali di CamRooms (Termini, Privacy, Linee guida) in EN e IT.
 //
 // ⚠️ NOTA: sono modelli redatti sulle pratiche dati reali dell'app; NON
-// costituiscono consulenza legale. Prima di pubblicare in via definitiva
-// falli rivedere da un avvocato, e completa i segnaposto:
-//   - [OPERATORE]  = identità del titolare del trattamento (persona/azienda)
-//   - [EMAIL]      = email di contatto (es. support@camrooms.app)
-//   - [PAESE/FORO] = legge applicabile e foro competente
+// costituiscono consulenza legale. Prima di affidarcisi del tutto, farli
+// rivedere da un avvocato. Titolare: Ciro Barone (privato con P.IVA); per
+// legge italiana un'attività con P.IVA dovrebbe indicare anche il numero di
+// P.IVA: aggiungerlo dove compare "Ciro Barone" se/quando disponibile.
 import type { Lang } from './i18n'
 
 export type LegalDocId = 'terms' | 'privacy' | 'guidelines'
@@ -31,7 +30,7 @@ const EN: Record<LegalDocId, LegalDoc> = {
     title: 'Terms of Service',
     updated: LEGAL_UPDATED_EN,
     intro:
-      'Welcome to CamRooms (the "Service"), operated by [OPERATORE]. By accessing or using the Service you agree to these Terms. If you do not agree, do not use the Service.',
+      'Welcome to CamRooms (the "Service"), operated by Ciro Barone. By accessing or using the Service you agree to these Terms. If you do not agree, do not use the Service.',
     sections: [
       {
         title: '1. Eligibility (18+)',
@@ -90,7 +89,7 @@ const EN: Record<LegalDocId, LegalDoc> = {
       {
         title: '8. Limitation of liability',
         body: [
-          'To the maximum extent permitted by law, [OPERATORE] is not liable for indirect, incidental or consequential damages, or for user-generated content or conduct. Nothing limits liability that cannot be limited by law.',
+          'To the maximum extent permitted by law, Ciro Barone is not liable for indirect, incidental or consequential damages, or for user-generated content or conduct. Nothing limits liability that cannot be limited by law.',
         ],
       },
       {
@@ -103,7 +102,7 @@ const EN: Record<LegalDocId, LegalDoc> = {
         title: '10. Changes and contact',
         body: [
           'We may update these Terms; material changes will be indicated by updating the date above. Continued use means acceptance.',
-          'Governing law: [PAESE/FORO]. Contact: [EMAIL].',
+          'Governing law: Italy. For consumers, the mandatory competent court is the consumer’s place of residence. Contact: support@camrooms.app.',
         ],
       },
     ],
@@ -112,7 +111,7 @@ const EN: Record<LegalDocId, LegalDoc> = {
     title: 'Privacy Policy',
     updated: LEGAL_UPDATED_EN,
     intro:
-      'This Policy explains how CamRooms, operated by [OPERATORE] (the "data controller"), processes your personal data. Contact: [EMAIL].',
+      'This Policy explains how CamRooms, operated by Ciro Barone (the "data controller"), processes your personal data. Contact: support@camrooms.app.',
     sections: [
       {
         title: '1. Data we process',
@@ -161,14 +160,14 @@ const EN: Record<LegalDocId, LegalDoc> = {
       {
         title: '6. Your rights',
         body: [
-          'Under the GDPR you may request access, rectification, erasure, restriction, portability, and object to processing, and withdraw consent at any time. You can edit your profile and delete chats in the app; for other requests or account deletion, contact [EMAIL].',
+          'Under the GDPR you may request access, rectification, erasure, restriction, portability, and object to processing, and withdraw consent at any time. You can edit your profile and delete chats in the app; for other requests or account deletion, contact support@camrooms.app.',
           'You may also lodge a complaint with your data protection authority.',
         ],
       },
       {
         title: '7. Children',
         body: [
-          'The Service is for adults (18+) only. We do not knowingly process data of minors. If you believe a minor is using the Service, contact [EMAIL] immediately.',
+          'The Service is for adults (18+) only. We do not knowingly process data of minors. If you believe a minor is using the Service, contact support@camrooms.app immediately.',
         ],
       },
       {
@@ -186,7 +185,7 @@ const EN: Record<LegalDocId, LegalDoc> = {
       {
         title: '10. Changes and contact',
         body: [
-          'We may update this Policy; the date above reflects the latest version. Data controller: [OPERATORE]. Contact: [EMAIL].',
+          'We may update this Policy; the date above reflects the latest version. Data controller: Ciro Barone. Contact: support@camrooms.app.',
         ],
       },
     ],
@@ -230,7 +229,7 @@ const EN: Record<LegalDocId, LegalDoc> = {
       {
         title: '6. Reporting and copyright (DMCA)',
         body: [
-          'Use the in-app Block and Report tools. To report a violation or a copyright infringement (DMCA), contact [EMAIL] with a description and the URL/username involved. We remove infringing content and repeat infringers.',
+          'Use the in-app Block and Report tools. To report a violation or a copyright infringement (DMCA), contact support@camrooms.app with a description and the URL/username involved. We remove infringing content and repeat infringers.',
         ],
       },
     ],
@@ -242,7 +241,7 @@ const IT: Record<LegalDocId, LegalDoc> = {
     title: 'Termini di Servizio',
     updated: LEGAL_UPDATED_IT,
     intro:
-      'Benvenuto su CamRooms (il "Servizio"), gestito da [OPERATORE]. Usando il Servizio accetti questi Termini. Se non li accetti, non usare il Servizio.',
+      'Benvenuto su CamRooms (il "Servizio"), gestito da Ciro Barone. Usando il Servizio accetti questi Termini. Se non li accetti, non usare il Servizio.',
     sections: [
       {
         title: '1. Requisiti (18+)',
@@ -301,7 +300,7 @@ const IT: Record<LegalDocId, LegalDoc> = {
       {
         title: '8. Limitazione di responsabilità',
         body: [
-          'Nei limiti massimi consentiti dalla legge, [OPERATORE] non è responsabile per danni indiretti, incidentali o consequenziali, né per contenuti o condotte degli utenti. Nulla limita responsabilità non limitabili per legge.',
+          'Nei limiti massimi consentiti dalla legge, Ciro Barone non è responsabile per danni indiretti, incidentali o consequenziali, né per contenuti o condotte degli utenti. Nulla limita responsabilità non limitabili per legge.',
         ],
       },
       {
@@ -314,7 +313,7 @@ const IT: Record<LegalDocId, LegalDoc> = {
         title: '10. Modifiche e contatti',
         body: [
           'Possiamo aggiornare questi Termini; le modifiche rilevanti sono indicate aggiornando la data in alto. L’uso continuato vale come accettazione.',
-          'Legge applicabile: [PAESE/FORO]. Contatto: [EMAIL].',
+          'Legge applicabile: Italia. Per i consumatori resta competente, in via inderogabile, il foro del luogo di residenza o domicilio del consumatore. Contatto: support@camrooms.app.',
         ],
       },
     ],
@@ -323,7 +322,7 @@ const IT: Record<LegalDocId, LegalDoc> = {
     title: 'Informativa sulla privacy',
     updated: LEGAL_UPDATED_IT,
     intro:
-      'Questa Informativa spiega come CamRooms, gestito da [OPERATORE] (il "titolare del trattamento"), tratta i tuoi dati personali. Contatto: [EMAIL].',
+      'Questa Informativa spiega come CamRooms, gestito da Ciro Barone (il "titolare del trattamento"), tratta i tuoi dati personali. Contatto: support@camrooms.app.',
     sections: [
       {
         title: '1. Dati che trattiamo',
@@ -372,14 +371,14 @@ const IT: Record<LegalDocId, LegalDoc> = {
       {
         title: '6. I tuoi diritti',
         body: [
-          'In base al GDPR puoi chiedere accesso, rettifica, cancellazione, limitazione, portabilità, opporti al trattamento e revocare il consenso in ogni momento. Puoi modificare il profilo ed eliminare le chat nell’app; per altre richieste o la cancellazione dell’account scrivi a [EMAIL].',
+          'In base al GDPR puoi chiedere accesso, rettifica, cancellazione, limitazione, portabilità, opporti al trattamento e revocare il consenso in ogni momento. Puoi modificare il profilo ed eliminare le chat nell’app; per altre richieste o la cancellazione dell’account scrivi a support@camrooms.app.',
           'Puoi anche presentare reclamo all’autorità di controllo (in Italia, il Garante per la protezione dei dati personali).',
         ],
       },
       {
         title: '7. Minori',
         body: [
-          'Il Servizio è riservato agli adulti (18+). Non trattiamo consapevolmente dati di minori. Se ritieni che un minore stia usando il Servizio, scrivi subito a [EMAIL].',
+          'Il Servizio è riservato agli adulti (18+). Non trattiamo consapevolmente dati di minori. Se ritieni che un minore stia usando il Servizio, scrivi subito a support@camrooms.app.',
         ],
       },
       {
@@ -397,7 +396,7 @@ const IT: Record<LegalDocId, LegalDoc> = {
       {
         title: '10. Modifiche e contatti',
         body: [
-          'Possiamo aggiornare questa Informativa; la data in alto indica l’ultima versione. Titolare del trattamento: [OPERATORE]. Contatto: [EMAIL].',
+          'Possiamo aggiornare questa Informativa; la data in alto indica l’ultima versione. Titolare del trattamento: Ciro Barone. Contatto: support@camrooms.app.',
         ],
       },
     ],
@@ -441,7 +440,7 @@ const IT: Record<LegalDocId, LegalDoc> = {
       {
         title: '6. Segnalazioni e copyright (DMCA)',
         body: [
-          'Usa gli strumenti Blocca e Segnala nell’app. Per segnalare una violazione o una violazione di copyright (DMCA), scrivi a [EMAIL] indicando descrizione e URL/username coinvolti. Rimuoviamo i contenuti illeciti e i recidivi.',
+          'Usa gli strumenti Blocca e Segnala nell’app. Per segnalare una violazione o una violazione di copyright (DMCA), scrivi a support@camrooms.app indicando descrizione e URL/username coinvolti. Rimuoviamo i contenuti illeciti e i recidivi.',
         ],
       },
     ],
