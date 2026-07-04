@@ -9,10 +9,13 @@ import { auth } from '../lib/firebase'
 import { useI18n } from '../lib/i18n'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { Logo, Icon } from './Icon'
+import { LegalModal } from './LegalModal'
+import type { LegalDocId } from '../lib/legal'
 
 export function AuthPage() {
   const { t } = useI18n()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [legal, setLegal] = useState<LegalDocId | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -141,7 +144,22 @@ export function AuthPage() {
         </form>
 
         <p className="mt-4 text-center text-xs text-ink-400">{t('auth.terms')}</p>
+        <p className="mt-1 flex items-center justify-center gap-2 text-center text-xs text-ink-400">
+          <button onClick={() => setLegal('terms')} className="underline hover:text-ink-200">
+            {t('legal.terms')}
+          </button>
+          <span className="text-ink-600">·</span>
+          <button onClick={() => setLegal('privacy')} className="underline hover:text-ink-200">
+            {t('legal.privacy')}
+          </button>
+          <span className="text-ink-600">·</span>
+          <button onClick={() => setLegal('guidelines')} className="underline hover:text-ink-200">
+            {t('legal.guidelines')}
+          </button>
+        </p>
       </div>
+
+      <LegalModal open={legal !== null} initial={legal ?? 'terms'} onClose={() => setLegal(null)} />
     </div>
   )
 }
