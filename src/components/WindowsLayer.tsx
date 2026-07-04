@@ -266,7 +266,7 @@ export function WindowsLayer() {
         schermo intero (desktop: finestra flottante 'watch' più sotto). */}
     {!isDesktop && watching && (
       <div className="fixed inset-0 z-[70] flex flex-col bg-ink-950 lg:hidden">
-        <div className="flex items-center gap-2 border-b border-white/[0.06] bg-ink-900 px-2 py-2">
+        <div className="flex items-center gap-2 border-b border-white/[0.06] bg-ink-900 px-2 pb-2 pt-[calc(0.5rem_+_env(safe-area-inset-top))]">
           <button
             onClick={() => void stopWatching()}
             className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-800 hover:text-white"

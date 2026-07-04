@@ -92,7 +92,7 @@ export function ImageMessage({ thumbUrl, fullPath, className }: ImageMessageProp
         >
           <button
             type="button"
-            className="fab absolute right-4 top-4 h-10 w-10 bg-white/10 hover:bg-white/20"
+            className="fab absolute right-4 top-[calc(1rem_+_env(safe-area-inset-top))] h-10 w-10 bg-white/10 hover:bg-white/20"
             onClick={() => setOpen(false)}
             aria-label={t('common.close')}
           >

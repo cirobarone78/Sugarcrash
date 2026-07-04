@@ -98,8 +98,9 @@ export function CamRoulette() {
 
   return (
     <div className="fixed inset-0 z-[130] flex flex-col bg-ink-950">
-      {/* Header */}
-      <header className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
+      {/* Header — padding-top per la safe area (status bar / Dynamic Island):
+          gli overlay `fixed` non ereditano il padding di sicurezza del body. */}
+      <header className="flex items-center justify-between border-b border-white/[0.06] px-4 pb-3 pt-[calc(0.75rem_+_env(safe-area-inset-top))]">
         <div className="flex items-center gap-2">
           <span className="fab h-8 w-8 bg-gradient-to-br from-teal-400 to-brand-500">
             <Icon name="camera" size={16} />
@@ -199,8 +200,8 @@ export function CamRoulette() {
               )}
             </div>
 
-            {/* Controlli */}
-            <div className="flex items-center justify-center gap-2 border-t border-white/[0.06] bg-ink-900/80 px-4 py-3">
+            {/* Controlli — padding-bottom per la safe area (home indicator). */}
+            <div className="flex items-center justify-center gap-2 border-t border-white/[0.06] bg-ink-900/80 px-4 pt-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))]">
               <button
                 onClick={r.toggleMic}
                 className={`fab h-11 w-11 ${r.micOn ? 'bg-ink-700' : 'bg-accent-red'}`}
