@@ -29,7 +29,7 @@ const EN: Record<LegalDocId, LegalDoc> = {
     title: 'Terms of Service',
     updated: LEGAL_UPDATED_EN,
     intro:
-      'Welcome to CamRooms (the "Service"), operated by Ciro Barone (sole proprietor, Italian VAT/P.IVA IT11079361215). By accessing or using the Service you agree to these Terms. If you do not agree, do not use the Service.',
+      'Welcome to CamRooms (the "Service"), operated by Ciro Barone (sole proprietor, Italian VAT/P.IVA IT11079361215; certified email/PEC: cirobarone78@pec.it). By accessing or using the Service you agree to these Terms. If you do not agree, do not use the Service.',
     sections: [
       {
         title: '1. Eligibility (18+)',
@@ -110,7 +110,7 @@ const EN: Record<LegalDocId, LegalDoc> = {
     title: 'Privacy Policy',
     updated: LEGAL_UPDATED_EN,
     intro:
-      'This Policy explains how CamRooms, operated by Ciro Barone (sole proprietor, Italian VAT/P.IVA IT11079361215) — the "data controller" — processes your personal data. Contact: support@camrooms.app.',
+      'This Policy explains how CamRooms, operated by Ciro Barone (sole proprietor, Italian VAT/P.IVA IT11079361215; certified email/PEC: cirobarone78@pec.it) — the "data controller" — processes your personal data. Contact: support@camrooms.app.',
     sections: [
       {
         title: '1. Data we process',
@@ -184,7 +184,7 @@ const EN: Record<LegalDocId, LegalDoc> = {
       {
         title: '10. Changes and contact',
         body: [
-          'We may update this Policy; the date above reflects the latest version. Data controller: Ciro Barone (VAT/P.IVA IT11079361215). Contact: support@camrooms.app.',
+          'We may update this Policy; the date above reflects the latest version. Data controller: Ciro Barone (VAT/P.IVA IT11079361215). Contact: support@camrooms.app; PEC: cirobarone78@pec.it.',
         ],
       },
     ],
@@ -240,7 +240,7 @@ const IT: Record<LegalDocId, LegalDoc> = {
     title: 'Termini di Servizio',
     updated: LEGAL_UPDATED_IT,
     intro:
-      'Benvenuto su CamRooms (il "Servizio"), gestito da Ciro Barone (ditta individuale, P.IVA 11079361215). Usando il Servizio accetti questi Termini. Se non li accetti, non usare il Servizio.',
+      'Benvenuto su CamRooms (il "Servizio"), gestito da Ciro Barone (ditta individuale, P.IVA 11079361215; PEC: cirobarone78@pec.it). Usando il Servizio accetti questi Termini. Se non li accetti, non usare il Servizio.',
     sections: [
       {
         title: '1. Requisiti (18+)',
@@ -321,7 +321,7 @@ const IT: Record<LegalDocId, LegalDoc> = {
     title: 'Informativa sulla privacy',
     updated: LEGAL_UPDATED_IT,
     intro:
-      'Questa Informativa spiega come CamRooms, gestito da Ciro Barone (ditta individuale, P.IVA 11079361215) — il "titolare del trattamento" — tratta i tuoi dati personali. Contatto: support@camrooms.app.',
+      'Questa Informativa spiega come CamRooms, gestito da Ciro Barone (ditta individuale, P.IVA 11079361215; PEC: cirobarone78@pec.it) — il "titolare del trattamento" — tratta i tuoi dati personali. Contatto: support@camrooms.app.',
     sections: [
       {
         title: '1. Dati che trattiamo',
@@ -395,7 +395,7 @@ const IT: Record<LegalDocId, LegalDoc> = {
       {
         title: '10. Modifiche e contatti',
         body: [
-          'Possiamo aggiornare questa Informativa; la data in alto indica l’ultima versione. Titolare del trattamento: Ciro Barone (P.IVA 11079361215). Contatto: support@camrooms.app.',
+          'Possiamo aggiornare questa Informativa; la data in alto indica l’ultima versione. Titolare del trattamento: Ciro Barone (P.IVA 11079361215). Contatto: support@camrooms.app; PEC: cirobarone78@pec.it.',
         ],
       },
     ],
