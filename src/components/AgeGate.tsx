@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { useI18n } from '../lib/i18n'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { Icon } from './Icon'
+import { LegalModal } from './LegalModal'
+import type { LegalDocId } from '../lib/legal'
 
 interface AgeGateProps {
   onConfirm: () => void
@@ -8,6 +11,7 @@ interface AgeGateProps {
 
 export function AgeGate({ onConfirm }: AgeGateProps) {
   const { t } = useI18n()
+  const [legal, setLegal] = useState<LegalDocId | null>(null)
   const features = [t('seo.f1'), t('seo.f2'), t('seo.f3'), t('seo.f4'), t('seo.f5')]
   return (
     <div className="flex min-h-full flex-col items-center justify-center gap-6 p-4">
@@ -23,6 +27,15 @@ export function AgeGate({ onConfirm }: AgeGateProps) {
         <button onClick={onConfirm} className="btn-primary w-full">
           {t('age.confirm')}
         </button>
+        <p className="text-center text-[11px] text-ink-400">
+          {t('legal.acceptNote')}{' '}
+          <button onClick={() => setLegal('terms')} className="underline hover:text-ink-200">
+            {t('legal.terms')}
+          </button>{' '}·{' '}
+          <button onClick={() => setLegal('privacy')} className="underline hover:text-ink-200">
+            {t('legal.privacy')}
+          </button>
+        </p>
         <a href="https://www.google.com" className="block text-center text-xs text-ink-400 hover:text-ink-200">
           {t('age.exit')}
         </a>
@@ -48,6 +61,8 @@ export function AgeGate({ onConfirm }: AgeGateProps) {
         </div>
         <p className="text-xs text-ink-400">{t('seo.free')}</p>
       </section>
+
+      <LegalModal open={legal !== null} initial={legal ?? 'terms'} onClose={() => setLegal(null)} />
     </div>
   )
 }

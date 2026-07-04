@@ -19,6 +19,8 @@ import { statusColor, validateUsername } from '../lib/utils'
 import { useI18n } from '../lib/i18n'
 import { SexSelector } from './SexBadge'
 import { FriendsSection } from './FriendsSection'
+import { LegalModal } from './LegalModal'
+import type { LegalDocId } from '../lib/legal'
 import type { Profile, Sex, UserStatus } from '../lib/types'
 
 interface SettingsPanelProps {
@@ -35,6 +37,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const [sound, setSound] = useState(isSoundEnabled())
   const [notify, setNotify] = useState(notificationsEnabled())
   const [notifyDenied, setNotifyDenied] = useState(notificationPermission() === 'denied')
+  const [legal, setLegal] = useState<LegalDocId | null>(null)
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? '')
   const [nickname, setNickname] = useState(profile?.username ?? '')
   const [nickErr, setNickErr] = useState<string | null>(null)
@@ -164,6 +167,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   }
 
   return (
+    <>
     <Modal open={open} onClose={onClose} title={t('settings.title')} maxWidth="max-w-lg">
       <div className="space-y-5">
         {/* Lingua */}
@@ -354,11 +358,31 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           )}
         </section>
 
+        {/* Legale */}
+        <section className="space-y-1.5">
+          <h3 className="text-xs font-bold uppercase tracking-wide text-ink-400">
+            {t('legal.settings')}
+          </h3>
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+            <button onClick={() => setLegal('terms')} className="text-brand-300 hover:underline">
+              {t('legal.terms')}
+            </button>
+            <button onClick={() => setLegal('privacy')} className="text-brand-300 hover:underline">
+              {t('legal.privacy')}
+            </button>
+            <button onClick={() => setLegal('guidelines')} className="text-brand-300 hover:underline">
+              {t('legal.guidelines')}
+            </button>
+          </div>
+        </section>
+
         <button onClick={() => void signOut()} className="btn-danger w-full">
           {t('settings.signout')}
         </button>
       </div>
     </Modal>
+    <LegalModal open={legal !== null} initial={legal ?? 'terms'} onClose={() => setLegal(null)} />
+    </>
   )
 }
 

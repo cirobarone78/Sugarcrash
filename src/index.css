@@ -6,7 +6,12 @@
   color-scheme: dark;
 }
 
-html,
+html {
+  /* Dynamic viewport height: su iOS `100%` non copre la viewport realmente
+     visibile (resta spazio morto sotto). `100dvh` segue l'area visibile. */
+  height: 100%;
+  height: 100dvh;
+}
 body,
 #root {
   height: 100%;

@@ -80,8 +80,8 @@ export function MobilePrivateChats() {
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-ink-950 lg:hidden">
-      {/* Intestazione */}
-      <div className="flex items-center gap-2 border-b border-white/[0.06] bg-ink-900 px-2 py-2">
+      {/* Intestazione — padding-top per la safe area (overlay a schermo intero). */}
+      <div className="flex items-center gap-2 border-b border-white/[0.06] bg-ink-900 px-2 pb-2 pt-[calc(0.5rem_+_env(safe-area-inset-top))]">
         <button
           onClick={hide}
           className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-800 hover:text-white"

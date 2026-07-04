@@ -142,6 +142,11 @@ Modello assegnato: **Opus 4.8** (correttezza complessa/sicurezza) ·
   - ⬜ Da fare TU: inviare il dominio a **Google Search Console** + richiedere
     l'indicizzazione; costruire backlink. Canali adult (SEO/reti adult/Reddit):
     i canali mainstream (Google Ads/Meta/store) vietano il 18+.
+- ✅ **Documenti legali**: Termini di Servizio, Privacy Policy (GDPR, basata sulle
+  pratiche dati reali) e Linee guida/contenuti (tolleranza zero minori + DMCA),
+  bilingue (`src/lib/legal.ts`), in un `LegalModal` con schede, linkati da gate
+  18+, login e Impostazioni. ⚠️ Da completare i segnaposto `[OPERATORE]`,
+  `[EMAIL]`, `[PAESE/FORO]` e far revisionare da un legale.
 - ⬜ Moderazione/sicurezza come feature (già: block/report/watermark) da valorizzare.
 - ⏸️ **Stima età dal volto**: valutata e NON consigliata ora. Gratis+affidabile
   non coesistono (modelli in-browser ±4-8 anni = falsa sicurezza); soluzioni serie
